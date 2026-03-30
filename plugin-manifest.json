@@ -12,6 +12,6 @@
   "homepage": "https://group6inc.com",
   "sections": {
     "description": "Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.",
-    "changelog": "<h4>v1.1.0</h4><ul><li>Converted from MU plugin to standard plugin</li><li>Added GitHub auto-updater with private repo support</li><li>Refactored into modular file structure</li></ul><h4>v1.0.0</h4><ul><li>Initial release</li></ul>"
+    "changelog": "<h4>v0.1</h4><ul><li>Initial beta release</li></ul>"
   }
 }

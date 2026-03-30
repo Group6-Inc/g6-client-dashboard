@@ -34,10 +34,10 @@ No token or authentication needed — the repo is public.
 The plugin points to:
 
 ```
-https://group6inc.com/g6-client-dashboard.json
+https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard.json
 ```
 
-Update this URL in `g6-client-dashboard.php` (`G6_DASHBOARD_MANIFEST_URL`) if you host it elsewhere. The manifest file in this repo (`plugin-manifest.json`) is a reference copy — you manage the live one on your server.
+Update this URL in `g6-client-dashboard.php` (`G6_DASHBOARD_MANIFEST_URL`) if you move the manifest. The `plugin-manifest.json` in this repo is a reference copy — the live one is the Gist above.
 
 ---
 

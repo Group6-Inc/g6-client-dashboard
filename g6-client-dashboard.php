@@ -27,7 +27,7 @@ define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
  */
 define( 'G6_DASHBOARD_GITHUB_ORG',   'g6-gabriel' );
 define( 'G6_DASHBOARD_GITHUB_REPO',  'g6-client-dashboard' );
-define( 'G6_DASHBOARD_MANIFEST_URL', 'https://group6inc.com/g6-client-dashboard.json' );
+define( 'G6_DASHBOARD_MANIFEST_URL', 'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard.json' );
 
 /**
  * Support ticket destination.
