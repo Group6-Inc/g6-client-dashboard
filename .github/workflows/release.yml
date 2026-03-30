@@ -64,9 +64,8 @@ jobs:
             --arg content "$CONTENT" \
             '{"files": {"g6-client-dashboard.json": {"content": $content}}}')
 
-          RESPONSE=$(curl -s -X PATCH \
+          curl -s -X PATCH \
             -H "Authorization: token $GIST_TOKEN" \
             -H "Content-Type: application/json" \
             https://api.github.com/gists/8d8b3d50ba384da12359e34c57efe39a \
-            -d "$PAYLOAD")
-          echo "Gist API response: $RESPONSE"
+            -d "$PAYLOAD"
