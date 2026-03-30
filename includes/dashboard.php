@@ -220,6 +220,7 @@ function g6_get_dashboard_css(): string {
 	.g6-dashboard__footer a { color: var(--g6-primary); text-decoration: none; font-weight: 600; }
 	.g6-dashboard__footer a:hover { text-decoration: underline; }
 	.g6-dashboard__footer-logo { display: inline-flex; margin-bottom: 6px; opacity: 0.5; }
+	.g6-dashboard__footer-logo path:not([fill="#FF6E61"]) { fill: #1D1D1B; }
 	';
 }
 
