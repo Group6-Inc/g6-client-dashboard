@@ -107,8 +107,8 @@ class Updater {
 
 	// ── Flag the update in the plugins transient ───────────────────────
 
-	public function check_for_update( object $transient ): object {
-		if ( empty( $transient->checked ) ) {
+	public function check_for_update( mixed $transient ): mixed {
+		if ( ! is_object( $transient ) || empty( $transient->checked ) ) {
 			return $transient;
 		}
 
