@@ -1,0 +1,17 @@
+{
+  "name": "Group6 Client Dashboard",
+  "slug": "g6-client-dashboard",
+  "author": "<a href='https://group6inc.com'>Group6</a>",
+  "author_profile": "https://group6inc.com",
+  "version": "0.1",
+  "download_url": "https://github.com/g6-gabriel/g6-client-dashboard/releases/download/v0.1/g6-client-dashboard.zip",
+  "requires": "6.0",
+  "tested": "6.7",
+  "requires_php": "8.0",
+  "last_updated": "2026-03-30 00:00:00",
+  "homepage": "https://group6inc.com",
+  "sections": {
+    "description": "Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.",
+    "changelog": "<h4>v1.1.0</h4><ul><li>Converted from MU plugin to standard plugin</li><li>Added GitHub auto-updater with private repo support</li><li>Refactored into modular file structure</li></ul><h4>v1.0.0</h4><ul><li>Initial release</li></ul>"
+  }
+}
