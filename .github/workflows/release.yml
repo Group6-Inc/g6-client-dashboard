@@ -3,7 +3,7 @@ name: Release Plugin
 on:
   push:
     tags:
-      - 'v*.*.*'   # triggers on tags like v1.2.0
+      - 'v*'   # triggers on any version tag e.g. v0.1, v1.2.0
 
 jobs:
   release:
