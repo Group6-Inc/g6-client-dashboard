@@ -64,7 +64,7 @@ GitHub Actions will automatically build `g6-client-dashboard.zip` and attach it 
 
 ### Step 2 — Update the manifest JSON
 
-Edit the live `g6-client-dashboard.json` on your server (e.g. `https://group6inc.com/g6-client-dashboard.json`):
+Edit the live Gist at `https://gist.github.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a`:
 
 - Bump `version` to match the new tag
 - Update `download_url` to point to the new Release zip

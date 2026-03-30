@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name:  Group6 Client Dashboard
- * Plugin URI:   https://github.com/g6-gabriel/g6-client-dashboard
+ * Plugin URI:   https://github.com/Group6-Inc/g6-client-dashboard
  * Description:  Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.
  * Version:      0.1
  * Author:       Group6
@@ -25,7 +25,7 @@ define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
  * MANIFEST_URL points to the JSON file you host (on your site,
  * GitHub Pages, or a raw Gist). See plugin-manifest.json in this repo.
  */
-define( 'G6_DASHBOARD_GITHUB_ORG',   'g6-gabriel' );
+define( 'G6_DASHBOARD_GITHUB_ORG',   'Group6-Inc' );
 define( 'G6_DASHBOARD_GITHUB_REPO',  'g6-client-dashboard' );
 define( 'G6_DASHBOARD_MANIFEST_URL', 'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard.json' );
 
