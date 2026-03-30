@@ -145,6 +145,7 @@ class Updater {
 			'plugin' === $options['type']
 		) {
 			delete_transient( $this->cache_key );
+			delete_site_transient( 'update_plugins' );
 		}
 	}
 
