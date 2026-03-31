@@ -97,6 +97,40 @@ function g6_settings_page_render(): void {
 			$config['guides'] = $guides;
 		}
 
+		// Parse services repeater.
+		$svc_names      = $_POST['svc_name']      ?? [];
+		$svc_descs      = $_POST['svc_desc']      ?? [];
+		$svc_urls       = $_POST['svc_url']       ?? [];
+		$svc_icons      = $_POST['svc_icon']      ?? [];
+		$svc_cta_labels = $_POST['svc_cta_label'] ?? [];
+		$svc_highlights = $_POST['svc_highlight'] ?? [];
+
+		$services = [];
+		$svc_index = 0;
+		foreach ( $svc_names as $i => $name ) {
+			$name = sanitize_text_field( $name );
+			if ( '' === $name ) {
+				$svc_index++;
+				continue;
+			}
+			$icon = sanitize_key( $svc_icons[ $i ] ?? 'zap' );
+			if ( ! in_array( $icon, $allowed_icons, true ) ) {
+				$icon = 'zap';
+			}
+			$services[] = [
+				'name'        => $name,
+				'description' => sanitize_text_field( $svc_descs[ $i ] ?? '' ),
+				'cta_url'     => esc_url_raw( $svc_urls[ $i ] ?? '' ),
+				'cta_label'   => sanitize_text_field( $svc_cta_labels[ $i ] ?? 'Learn More' ),
+				'icon'        => $icon,
+				'highlight'   => isset( $svc_highlights[ $svc_index ] ),
+			];
+			$svc_index++;
+		}
+		if ( ! empty( $services ) ) {
+			$config['services'] = $services;
+		}
+
 		// Parse keywords (one per line: term | position | change | volume).
 		$keywords_raw = trim( $_POST['keywords'] ?? '' );
 		if ( $keywords_raw ) {
@@ -318,6 +352,106 @@ function g6_settings_page_render(): void {
 				</table>
 			</div>
 
+			<div id="g6-settings-services">
+				<h2 class="title">Add-On Services</h2>
+				<p style="margin:-4px 0 12px; color:#646970;">Services shown in the "Grow Your Business" widget. Drag to reorder. Check "Popular" to highlight a card.</p>
+				<table class="form-table">
+					<tr>
+						<th scope="row">Services</th>
+						<td>
+							<div id="g6-services-repeater">
+								<?php foreach ( $cfg['services'] as $i => $svc ) : ?>
+								<div class="g6-svc-row" style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;">
+									<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+										<input type="text" name="svc_name[]"      value="<?php echo esc_attr( $svc['name'] ); ?>"        placeholder="Service name"   class="regular-text" style="width:100%;">
+										<select            name="svc_icon[]"      style="width:100%;">
+											<?php foreach ( [
+												'map-pin'        => 'Map Pin / Local',
+												'star'           => 'Star / Reviews',
+												'zap'            => 'Zap / Brand',
+												'trending-up'    => 'Trending Up / Ads',
+												'search'         => 'Search / SEO',
+												'file-text'      => 'File / Content',
+												'bar-chart'      => 'Bar Chart',
+												'message-circle' => 'Message',
+												'mail'           => 'Mail',
+												'phone'          => 'Phone',
+												'edit'           => 'Edit',
+												'plus-circle'    => 'Plus',
+												'book-open'      => 'Book',
+												'inbox'          => 'Inbox',
+												'check-circle'   => 'Check',
+											] as $icon_key => $icon_label ) : ?>
+												<option value="<?php echo esc_attr( $icon_key ); ?>" <?php selected( $svc['icon'], $icon_key ); ?>><?php echo esc_html( $icon_label ); ?></option>
+											<?php endforeach; ?>
+										</select>
+										<input type="text" name="svc_desc[]"      value="<?php echo esc_attr( $svc['description'] ); ?>" placeholder="Short description"  class="regular-text" style="width:100%; grid-column:1/-1;">
+										<input type="url"  name="svc_url[]"       value="<?php echo esc_attr( $svc['cta_url'] ); ?>"    placeholder="https://…"       class="regular-text" style="width:100%;">
+										<input type="text" name="svc_cta_label[]" value="<?php echo esc_attr( $svc['cta_label'] ); ?>"  placeholder="CTA label (e.g. Learn More)" class="regular-text" style="width:100%;">
+										<label style="display:flex; align-items:center; gap:6px; grid-column:1/-1;">
+											<input type="checkbox" name="svc_highlight[<?php echo $i; ?>]" <?php checked( $svc['highlight'] ); ?>>
+											Mark as Popular
+										</label>
+									</div>
+									<button type="button" onclick="g6RemoveService(this)" style="flex-shrink:0; background:none; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:4px 8px; color:#b32d2e; font-size:18px; line-height:1;" title="Remove">&times;</button>
+								</div>
+								<?php endforeach; ?>
+							</div>
+
+							<button type="button" onclick="g6AddService()" class="button" style="margin-top:6px;">+ Add Service</button>
+
+							<script>
+							var g6SvcIconOptions = <?php echo wp_json_encode( [
+								'map-pin'        => 'Map Pin / Local',
+								'star'           => 'Star / Reviews',
+								'zap'            => 'Zap / Brand',
+								'trending-up'    => 'Trending Up / Ads',
+								'search'         => 'Search / SEO',
+								'file-text'      => 'File / Content',
+								'bar-chart'      => 'Bar Chart',
+								'message-circle' => 'Message',
+								'mail'           => 'Mail',
+								'phone'          => 'Phone',
+								'edit'           => 'Edit',
+								'plus-circle'    => 'Plus',
+								'book-open'      => 'Book',
+								'inbox'          => 'Inbox',
+								'check-circle'   => 'Check',
+							] ); ?>;
+
+							function g6AddService() {
+								var iconOpts = Object.entries(g6SvcIconOptions).map(function([k,v]) {
+									return '<option value="' + k + '">' + v + '</option>';
+								}).join('');
+								var idx = document.querySelectorAll('.g6-svc-row').length;
+
+								var row = document.createElement('div');
+								row.className = 'g6-svc-row';
+								row.style.cssText = 'display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;';
+								row.innerHTML =
+									'<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">' +
+										'<input type="text" name="svc_name[]" placeholder="Service name" class="regular-text" style="width:100%;">' +
+										'<select name="svc_icon[]" style="width:100%;">' + iconOpts + '</select>' +
+										'<input type="text" name="svc_desc[]" placeholder="Short description" class="regular-text" style="width:100%; grid-column:1/-1;">' +
+										'<input type="url" name="svc_url[]" placeholder="https://\u2026" class="regular-text" style="width:100%;">' +
+										'<input type="text" name="svc_cta_label[]" placeholder="Learn More" class="regular-text" style="width:100%;">' +
+										'<label style="display:flex; align-items:center; gap:6px; grid-column:1/-1;">' +
+											'<input type="checkbox" name="svc_highlight[' + idx + ']"> Mark as Popular' +
+										'</label>' +
+									'</div>' +
+									'<button type="button" onclick="g6RemoveService(this)" style="flex-shrink:0; background:none; border:1px solid #ccc; border-radius:4px; cursor:pointer; padding:4px 8px; color:#b32d2e; font-size:18px; line-height:1;" title="Remove">&times;</button>';
+								document.getElementById('g6-services-repeater').appendChild(row);
+							}
+
+							function g6RemoveService(btn) {
+								btn.closest('.g6-svc-row').remove();
+							}
+							</script>
+						</td>
+					</tr>
+				</table>
+			</div>
+
 			<div id="g6-settings-keywords">
 				<h2 class="title">SEO Keywords</h2>
 				<table class="form-table">
@@ -342,6 +476,12 @@ function g6_settings_page_render(): void {
 							To trigger an update check now, visit
 							<a href="<?php echo esc_url( admin_url( 'update-core.php' ) ); ?>">Dashboard &rarr; Updates</a>
 							and click <strong>Check Again</strong>.
+						</p>
+						<p class="description" style="margin-top:6px;">
+							<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'g6-refresh-update', '1' ), 'g6_refresh_update' ) ); ?>" class="button button-secondary">
+								Force Refresh Update Cache
+							</a>
+							<span style="margin-left:6px; color:#646970;">Clears the cached manifest and reloads update info immediately.</span>
 						</p>
 					</td>
 				</tr>

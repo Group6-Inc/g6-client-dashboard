@@ -33,6 +33,7 @@ class Updater {
 		add_filter( 'site_transient_update_plugins', [ $this, 'check_for_update' ] );
 		add_action( 'upgrader_process_complete',     [ $this, 'purge_cache' ],    10, 2 );
 		add_action( 'wp_update_plugins',             [ $this, 'purge_manifest_cache' ] );
+		add_action( 'admin_init',                    [ $this, 'handle_force_refresh' ] );
 	}
 
 	// ── Fetch & cache the remote manifest ──────────────────────────────
@@ -141,6 +142,24 @@ class Updater {
 
 	public function purge_manifest_cache(): void {
 		delete_transient( $this->cache_key );
+	}
+
+	// ── Handle ?g6-refresh-update=1 URL parameter ─────────────────────
+
+	public function handle_force_refresh(): void {
+		if (
+			! isset( $_GET['g6-refresh-update'] ) ||
+			! current_user_can( 'manage_options' ) ||
+			! check_admin_referer( 'g6_refresh_update' )
+		) {
+			return;
+		}
+
+		delete_transient( $this->cache_key );
+		delete_site_transient( 'update_plugins' );
+
+		wp_safe_redirect( remove_query_arg( [ 'g6-refresh-update', '_wpnonce' ] ) );
+		exit;
 	}
 
 	// ── Clear cached manifest after an update completes ───────────────

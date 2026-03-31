@@ -33,12 +33,12 @@ jobs:
                     --exclude='plugin-manifest.json' \
                     . build/g6-client-dashboard/
           cd build
-          zip -r g6-client-dashboard.zip g6-client-dashboard/
+          zip -r g6-client-dashboard-${{ steps.version.outputs.VERSION }}.zip g6-client-dashboard/
 
       - name: Create GitHub Release and upload zip
         uses: softprops/action-gh-release@v2
         with:
-          files: build/g6-client-dashboard.zip
+          files: build/g6-client-dashboard-${{ steps.version.outputs.VERSION }}.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.VERSION }}
           DATE=$(date -u '+%Y-%m-%d %H:%M:%S')
-          DOWNLOAD_URL="https://github.com/Group6-Inc/g6-client-dashboard/releases/download/v${VERSION}/g6-client-dashboard.zip"
+          DOWNLOAD_URL="https://github.com/Group6-Inc/g6-client-dashboard/releases/download/v${VERSION}/g6-client-dashboard-${VERSION}.zip"
 
           # Update version, download_url, and last_updated from the tag
           CONTENT=$(jq \
