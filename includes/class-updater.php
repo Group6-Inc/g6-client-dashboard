@@ -32,6 +32,7 @@ class Updater {
 		add_filter( 'plugins_api',                   [ $this, 'plugin_info' ],    20, 3 );
 		add_filter( 'site_transient_update_plugins', [ $this, 'check_for_update' ] );
 		add_action( 'upgrader_process_complete',     [ $this, 'purge_cache' ],    10, 2 );
+		add_action( 'wp_update_plugins',             [ $this, 'purge_manifest_cache' ] );
 	}
 
 	// ── Fetch & cache the remote manifest ──────────────────────────────
@@ -134,6 +135,12 @@ class Updater {
 		}
 
 		return $transient;
+	}
+
+	// ── Clear manifest cache on forced update check ("Check Again") ──
+
+	public function purge_manifest_cache(): void {
+		delete_transient( $this->cache_key );
 	}
 
 	// ── Clear cached manifest after an update completes ───────────────
