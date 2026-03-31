@@ -170,6 +170,20 @@ function g6_default_config(): array {
 			],
 		],
 
+		// Widget visibility
+		'widgets' => [
+			'guides'   => true,
+			'keywords' => true,
+			'reviews'  => true,
+			'services' => true,
+			'contact'  => true,
+			'video'    => false,
+		],
+
+		// Featured video
+		'video_url'   => '',
+		'video_title' => 'How to Use Your WordPress Site',
+
 		'use_search_console' => false,
 		'use_gbp_api'        => false,
 		'last_updated'       => current_time( 'mysql' ),

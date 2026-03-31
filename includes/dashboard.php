@@ -9,6 +9,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+// ── Video embed helper ────────────────────────────────────────────────────────
+
+function g6_get_video_embed_url( string $url ): string {
+	if ( preg_match( '/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/', $url, $m ) ) {
+		return 'https://www.youtube.com/embed/' . $m[1];
+	}
+	if ( preg_match( '/vimeo\.com\/(?:video\/)?(\d+)/', $url, $m ) ) {
+		return 'https://player.vimeo.com/video/' . $m[1];
+	}
+	return '';
+}
+
 // ── Register & clean up dashboard widgets ─────────────────────────────────────
 
 add_action( 'wp_dashboard_setup', 'g6_dashboard_setup', 1 );
@@ -266,6 +278,7 @@ function g6_render_dashboard(): void {
 		</div>
 
 		<!-- How-to Guides -->
+		<?php if ( $cfg['widgets']['guides'] ?? true ) : ?>
 		<div class="g6-card g6-dashboard__full-width" style="margin-bottom:24px;">
 			<div class="g6-dashboard__section-header">
 				<h2 class="g6-dashboard__section-title">
@@ -285,10 +298,37 @@ function g6_render_dashboard(): void {
 				<?php endforeach; ?>
 			</div>
 		</div>
+		<?php endif; ?>
+
+		<!-- Featured Video -->
+		<?php
+		$embed_url = ! empty( $cfg['video_url'] ) ? g6_get_video_embed_url( $cfg['video_url'] ) : '';
+		if ( ( $cfg['widgets']['video'] ?? false ) && $embed_url ) :
+		?>
+		<div class="g6-card g6-dashboard__full-width" style="margin-bottom:24px;">
+			<div class="g6-dashboard__section-header">
+				<h2 class="g6-dashboard__section-title">
+					<?php echo g6_icon( 'play-circle', 20 ); ?>
+					<?php echo esc_html( $cfg['video_title'] ?: 'How to Use Your WordPress Site' ); ?>
+				</h2>
+			</div>
+			<div style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:var(--g6-radius);">
+				<iframe
+					src="<?php echo esc_url( $embed_url ); ?>"
+					style="position:absolute; top:0; left:0; width:100%; height:100%; border:0;"
+					allowfullscreen
+					loading="lazy">
+				</iframe>
+			</div>
+		</div>
+		<?php endif; ?>
 
 		<!-- Keywords + Reviews -->
+		<?php $show_keywords = $cfg['widgets']['keywords'] ?? true; $show_reviews = $cfg['widgets']['reviews'] ?? true; ?>
+		<?php if ( $show_keywords || $show_reviews ) : ?>
 		<div class="g6-dashboard__grid">
 
+			<?php if ( $show_keywords ) : ?>
 			<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
@@ -335,7 +375,9 @@ function g6_render_dashboard(): void {
 					</a>
 				</div>
 			</div>
+			<?php endif; ?>
 
+			<?php if ( $show_reviews ) : ?>
 			<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
@@ -377,12 +419,17 @@ function g6_render_dashboard(): void {
 					</a>
 				</div>
 			</div>
+			<?php endif; ?>
 
 		</div>
+		<?php endif; ?>
 
 		<!-- Services + Contact -->
+		<?php $show_services = $cfg['widgets']['services'] ?? true; $show_contact = $cfg['widgets']['contact'] ?? true; ?>
+		<?php if ( $show_services || $show_contact ) : ?>
 		<div class="g6-dashboard__grid">
 
+			<?php if ( $show_services ) : ?>
 			<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
@@ -404,7 +451,9 @@ function g6_render_dashboard(): void {
 					<?php endforeach; ?>
 				</div>
 			</div>
+			<?php endif; ?>
 
+			<?php if ( $show_contact ) : ?>
 			<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
@@ -442,8 +491,10 @@ function g6_render_dashboard(): void {
 					<div class="g6-contact-form__error" id="g6-contact-error"></div>
 				</div>
 			</div>
+			<?php endif; ?>
 
 		</div>
+		<?php endif; ?>
 
 		<!-- Footer -->
 		<div class="g6-dashboard__footer">
