@@ -141,7 +141,7 @@ function g6_get_dashboard_css(): string {
 
 	/* ── Grid layout ── */
 	.g6-dashboard__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-	.g6-dashboard__full-width { grid-column: 1 / -1; }
+	.g6-card--full { grid-column: 1 / -1; }
 	@media (max-width: 860px) { .g6-dashboard__grid { grid-template-columns: 1fr; } }
 
 	/* ── Card base ── */
@@ -231,7 +231,7 @@ function g6_get_dashboard_css(): string {
 	.g6-dashboard__footer { text-align: center; padding: 24px 0 8px; font-size: 12px; color: var(--g6-neutral-500); }
 	.g6-dashboard__footer a { color: var(--g6-primary); text-decoration: none; font-weight: 600; }
 	.g6-dashboard__footer a:hover { text-decoration: underline; }
-	.g6-dashboard__footer-logo { display: inline-flex; margin-bottom: 6px; opacity: 0.5; }
+	.g6-dashboard__footer-logo { display: inline-flex; margin-bottom: 6px; }
 	.g6-dashboard__footer-logo path:not([fill="#FF6E61"]) { fill: #1D1D1B; }
 	';
 }
@@ -277,9 +277,11 @@ function g6_render_dashboard(): void {
 			</div>
 		</div>
 
+		<div class="g6-dashboard__grid">
+
 		<!-- How-to Guides -->
 		<?php if ( $cfg['widgets']['guides'] ?? true ) : ?>
-		<div class="g6-card g6-dashboard__full-width" style="margin-bottom:24px;">
+		<div class="g6-card g6-card--full">
 			<div class="g6-dashboard__section-header">
 				<h2 class="g6-dashboard__section-title">
 					<?php echo g6_icon( 'book-open', 20 ); ?>
@@ -305,7 +307,7 @@ function g6_render_dashboard(): void {
 		$embed_url = ! empty( $cfg['video_url'] ) ? g6_get_video_embed_url( $cfg['video_url'] ) : '';
 		if ( ( $cfg['widgets']['video'] ?? false ) && $embed_url ) :
 		?>
-		<div class="g6-card g6-dashboard__full-width" style="margin-bottom:24px;">
+		<div class="g6-card">
 			<div class="g6-dashboard__section-header">
 				<h2 class="g6-dashboard__section-title">
 					<?php echo g6_icon( 'play-circle', 20 ); ?>
@@ -323,13 +325,9 @@ function g6_render_dashboard(): void {
 		</div>
 		<?php endif; ?>
 
-		<!-- Keywords + Reviews -->
-		<?php $show_keywords = $cfg['widgets']['keywords'] ?? true; $show_reviews = $cfg['widgets']['reviews'] ?? true; ?>
-		<?php if ( $show_keywords || $show_reviews ) : ?>
-		<div class="g6-dashboard__grid">
-
-			<?php if ( $show_keywords ) : ?>
-			<div class="g6-card">
+		<!-- Keyword Rankings -->
+		<?php if ( $cfg['widgets']['keywords'] ?? true ) : ?>
+		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
 						<?php echo g6_icon( 'search', 20 ); ?>
@@ -374,11 +372,12 @@ function g6_render_dashboard(): void {
 						Talk to us about Local SEO &rarr;
 					</a>
 				</div>
-			</div>
-			<?php endif; ?>
+		</div>
+		<?php endif; ?>
 
-			<?php if ( $show_reviews ) : ?>
-			<div class="g6-card">
+		<!-- Reputation Snapshot -->
+		<?php if ( $cfg['widgets']['reviews'] ?? true ) : ?>
+		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
 						<?php echo g6_icon( 'star', 20 ); ?>
@@ -418,19 +417,12 @@ function g6_render_dashboard(): void {
 						Ask about Reputation Management &rarr;
 					</a>
 				</div>
-			</div>
-			<?php endif; ?>
-
 		</div>
 		<?php endif; ?>
 
-		<!-- Services + Contact -->
-		<?php $show_services = $cfg['widgets']['services'] ?? true; $show_contact = $cfg['widgets']['contact'] ?? true; ?>
-		<?php if ( $show_services || $show_contact ) : ?>
-		<div class="g6-dashboard__grid">
-
-			<?php if ( $show_services ) : ?>
-			<div class="g6-card">
+		<!-- Grow Your Business -->
+		<?php if ( $cfg['widgets']['services'] ?? true ) : ?>
+		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
 						<?php echo g6_icon( 'zap', 20 ); ?>
@@ -450,11 +442,12 @@ function g6_render_dashboard(): void {
 						</div>
 					<?php endforeach; ?>
 				</div>
-			</div>
-			<?php endif; ?>
+		</div>
+		<?php endif; ?>
 
-			<?php if ( $show_contact ) : ?>
-			<div class="g6-card">
+		<!-- Get in Touch -->
+		<?php if ( $cfg['widgets']['contact'] ?? true ) : ?>
+		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
 						<?php echo g6_icon( 'message-circle', 20 ); ?>
@@ -490,11 +483,10 @@ function g6_render_dashboard(): void {
 					</div>
 					<div class="g6-contact-form__error" id="g6-contact-error"></div>
 				</div>
-			</div>
-			<?php endif; ?>
-
 		</div>
 		<?php endif; ?>
+
+		</div><!-- /.g6-dashboard__grid -->
 
 		<!-- Footer -->
 		<div class="g6-dashboard__footer">
