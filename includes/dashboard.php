@@ -290,7 +290,7 @@ function g6_render_dashboard(): void {
 			</div>
 			<div class="g6-guides">
 				<?php foreach ( $cfg['guides'] as $guide ) : ?>
-					<a href="<?php echo esc_url( $guide['url'] ); ?>" class="g6-guide">
+					<a href="<?php echo esc_url( $guide['url'] ); ?>" class="g6-guide" target="_blank" rel="noopener">
 						<div class="g6-guide__icon"><?php echo g6_icon( $guide['icon'] ); ?></div>
 						<div>
 							<p class="g6-guide__title"><?php echo esc_html( $guide['title'] ); ?></p>
