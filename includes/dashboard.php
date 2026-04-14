@@ -31,16 +31,19 @@ function g6_dashboard_setup(): void {
 	remove_meta_box( 'dashboard_site_health', 'dashboard', 'normal' );
 	remove_meta_box( 'dashboard_right_now',   'dashboard', 'normal' );
 	remove_meta_box( 'dashboard_activity',    'dashboard', 'normal' );
-
-	add_meta_box(
-		'g6_client_dashboard',
-		'G6 Client Dashboard',
-		'g6_render_dashboard',
-		'dashboard',
-		'normal',
-		'high'
-	);
 }
+
+// ── Hijack the welcome panel slot ─────────────────────────────────────────────
+
+remove_action( 'welcome_panel', 'wp_welcome_panel' );
+add_action( 'welcome_panel', 'g6_render_dashboard' );
+
+// Force the welcome panel to always be visible (never let it be dismissed).
+add_action( 'current_screen', function( \WP_Screen $screen ): void {
+	if ( 'dashboard' === $screen->id ) {
+		update_user_meta( get_current_user_id(), 'show_welcome_panel', 1 );
+	}
+} );
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -56,19 +59,9 @@ function g6_dashboard_styles( string $hook ): void {
 function g6_get_dashboard_css(): string {
 	return '
 	/* ── Reset the widget chrome ── */
-	#g6_client_dashboard {
-		border: none !important;
-		box-shadow: none !important;
-		background: transparent !important;
-		margin: 0 !important;
-		padding: 0 !important;
-	}
-	#g6_client_dashboard .postbox-header { display: none !important; }
-	#g6_client_dashboard .inside { padding: 0 !important; margin: 0 !important; }
-	#dashboard-widgets #postbox-container-1 { width: 100% !important; }
-	#dashboard-widgets #postbox-container-2,
-	#dashboard-widgets #postbox-container-3,
-	#dashboard-widgets #postbox-container-4 { width: auto !important; }
+	/* ── Reset welcome panel chrome ── */
+	#welcome-panel { background: transparent !important; border: none !important; padding: 0 !important; box-shadow: none !important; }
+	#welcome-panel .welcome-panel-close { display: none !important; }
 
 	/* ── Design tokens ── */
 	:root {
