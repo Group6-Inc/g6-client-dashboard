@@ -77,11 +77,13 @@ function g6_dashboard_styles( string $hook ): void {
 
 function g6_get_dashboard_css(): string {
 	return '
-	/* ── Reset the widget chrome ── */
-	/* ── Reset welcome panel chrome ── */
+	/* ── Reset welcome panel chrome (admins) ── */
 	#welcome-panel { background: transparent !important; border: none !important; padding: 0 !important; box-shadow: none !important; }
 	#welcome-panel .welcome-panel-close { display: none !important; }
 	#welcome-panel .welcome-panel-content { padding: 0 !important; }
+
+	/* ── Spacing for editors (admin_notices context) ── */
+	#wpbody-content > .g6-dashboard { margin: 50px 20px 0 2px; }
 
 	/* ── Neutralise WordPress welcome-panel typography overrides ── */
 	#welcome-panel h2 { font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; margin: inherit !important; }
