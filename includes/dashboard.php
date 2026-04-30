@@ -36,7 +36,7 @@ function g6_dashboard_setup(): void {
 	remove_action( 'welcome_panel', 'wp_welcome_panel' );
 }
 
-// ── Hijack the welcome panel slot ─────────────────────────────────────────────
+// ── Hijack the welcome panel slot (admins) ───────────────────────────────────
 
 add_action( 'welcome_panel', 'g6_render_dashboard' );
 
@@ -45,6 +45,23 @@ add_action( 'current_screen', function( \WP_Screen $screen ): void {
 	if ( 'dashboard' === $screen->id ) {
 		update_user_meta( get_current_user_id(), 'show_welcome_panel', 1 );
 	}
+} );
+
+// ── Editors: render above widget columns via admin_notices ───────────────────
+// Welcome panel is gated to manage_options; editors use this fallback instead.
+
+add_action( 'admin_notices', function(): void {
+	$screen = get_current_screen();
+	if ( ! $screen || 'dashboard' !== $screen->id ) {
+		return;
+	}
+	if ( current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	if ( ! current_user_can( 'edit_posts' ) ) {
+		return;
+	}
+	g6_render_dashboard();
 } );
 
 // ── Styles ────────────────────────────────────────────────────────────────────
