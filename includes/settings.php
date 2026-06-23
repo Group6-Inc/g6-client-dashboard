@@ -293,13 +293,14 @@ function g6_settings_page_render(): void {
 			<!-- ═══════════════════════════════════════════════════════════ -->
 			<div class="g6-tab-panel" id="g6-tab-content" style="display:none">
 
+				<div id="g6-widget-settings-video"<?php echo empty( $cfg['widgets']['video'] ) ? ' style="display:none"' : ''; ?>>
 				<h2 class="title">Featured Video</h2>
 				<table class="form-table">
 					<tr>
 						<th scope="row">Video URL</th>
 						<td>
 							<input type="url" name="video_url" value="<?php echo esc_attr( $cfg['video_url'] ?? '' ); ?>" class="regular-text" placeholder="https://www.youtube.com/watch?v=...">
-							<p class="description">Paste a YouTube or Vimeo URL. The Video widget must be enabled on the Dashboard tab for this to appear.</p>
+							<p class="description">Paste a YouTube or Vimeo URL.</p>
 						</td>
 					</tr>
 					<tr>
@@ -309,7 +310,9 @@ function g6_settings_page_render(): void {
 						</td>
 					</tr>
 				</table>
+				</div><!-- /widget-settings-video -->
 
+				<div id="g6-widget-settings-guides"<?php echo empty( $cfg['widgets']['guides'] ) ? ' style="display:none"' : ''; ?>>
 				<h2 class="title">How-To Guides &amp; Resources</h2>
 				<p style="margin:-4px 0 12px; color:#646970;">Add or remove guide cards shown on the client dashboard. Each card links to a Loom, Google Doc, or any URL.</p>
 				<table class="form-table">
@@ -337,7 +340,9 @@ function g6_settings_page_render(): void {
 						</td>
 					</tr>
 				</table>
+				</div><!-- /widget-settings-guides -->
 
+				<div id="g6-widget-settings-services"<?php echo empty( $cfg['widgets']['services'] ) ? ' style="display:none"' : ''; ?>>
 				<h2 class="title">Add-On Services</h2>
 				<p style="margin:-4px 0 12px; color:#646970;">Services shown in the "Grow Your Business" widget. Check "Popular" to highlight a card.</p>
 				<table class="form-table">
@@ -370,7 +375,9 @@ function g6_settings_page_render(): void {
 						</td>
 					</tr>
 				</table>
+				</div><!-- /widget-settings-services -->
 
+				<div id="g6-widget-settings-keywords"<?php echo empty( $cfg['widgets']['keywords'] ) ? ' style="display:none"' : ''; ?>>
 				<h2 class="title">SEO Keywords</h2>
 				<table class="form-table">
 					<tr>
@@ -381,6 +388,7 @@ function g6_settings_page_render(): void {
 						</td>
 					</tr>
 				</table>
+				</div><!-- /widget-settings-keywords -->
 
 			</div><!-- /tab: content -->
 
@@ -662,6 +670,25 @@ function g6_settings_page_render(): void {
 	}
 
 	function g6RemoveService(btn) { btn.closest('.g6-svc-row').remove(); }
+
+	// ── Widget visibility → Content tab settings ──────────────────────────────
+	// Keys that have a corresponding settings section on the Content tab.
+	var g6WidgetSettingsKeys = ['video', 'guides', 'services', 'keywords'];
+
+	function g6SyncWidgetSettings(key, enabled) {
+		var el = document.getElementById('g6-widget-settings-' + key);
+		if (el) el.style.display = enabled ? '' : 'none';
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+		g6WidgetSettingsKeys.forEach(function(key) {
+			var cb = document.querySelector('input[name="widget_' + key + '"]');
+			if (!cb) return;
+			cb.addEventListener('change', function() {
+				g6SyncWidgetSettings(key, this.checked);
+			});
+		});
+	});
 	</script>
 	<?php
 }
