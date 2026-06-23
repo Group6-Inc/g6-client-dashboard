@@ -172,6 +172,18 @@ function g6_default_config(): array {
 		'video_url'   => '',
 		'video_title' => 'How to Use Your WordPress Site',
 
+		// Tracking & analytics script IDs.
+		'tracking' => [
+			'gtm_id'            => '',
+			'google_ads_id'     => '',
+			'facebook_pixel_id' => '',
+			'x_pixel_id'        => '',
+			'clarity_project_id'=> '',
+		],
+
+		// Developer tools.
+		'asset_manager_enabled' => false,
+
 		'use_search_console' => false,
 		'use_gbp_api'        => false,
 		'last_updated'       => current_time( 'mysql' ),

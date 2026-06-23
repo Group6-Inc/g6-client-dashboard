@@ -3,7 +3,7 @@
  * Plugin Name:  Group6 Client Dashboard
  * Plugin URI:   https://github.com/Group6-Inc/g6-client-dashboard
  * Description:  Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.
- * Version:      0.2.8
+ * Version:      0.3.0
  * Author:       Group6
  * Author URI:   https://group6inc.com
  * License:      Proprietary
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'G6_DASHBOARD_VERSION',   '0.2.8' );
+define( 'G6_DASHBOARD_VERSION',   '0.3.0' );
 define( 'G6_DASHBOARD_FILE',      __FILE__ );
 define( 'G6_DASHBOARD_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
@@ -42,6 +42,16 @@ require_once G6_DASHBOARD_DIR . 'includes/icons.php';
 require_once G6_DASHBOARD_DIR . 'includes/dashboard.php';
 require_once G6_DASHBOARD_DIR . 'includes/ajax.php';
 require_once G6_DASHBOARD_DIR . 'includes/settings.php';
+require_once G6_DASHBOARD_DIR . 'includes/tracking.php';
 
 // Boot the updater.
 new G6\Dashboard\Updater( G6_DASHBOARD_VERSION );
+
+// Conditionally boot the Asset Manager based on settings.
+add_action( 'plugins_loaded', function() {
+	$cfg = get_option( 'g6_client_config', [] );
+	if ( ! empty( $cfg['asset_manager_enabled'] ) ) {
+		require_once G6_DASHBOARD_DIR . 'includes/asset-manager.php';
+		new G6_Asset_Manager();
+	}
+} );

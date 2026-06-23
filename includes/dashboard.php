@@ -554,7 +554,7 @@ function g6_render_dashboard(): void {
 		data.append('action',    'g6_contact_submit');
 		data.append('subject',   subject);
 		data.append('message',   message);
-		data.append('_wpnonce',  '<?php echo wp_create_nonce( 'g6_contact_nonce' ); ?>');
+		data.append('_wpnonce',  '<?php echo esc_js( wp_create_nonce( 'g6_contact_nonce' ) ); ?>');
 
 		fetch(ajaxurl, { method: 'POST', body: data })
 			.then(function(r) { return r.json(); })
