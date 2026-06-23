@@ -102,7 +102,7 @@ function g6_settings_handle_save( array &$config ): void {
 		$guides[] = [
 			'title'       => $title,
 			'description' => sanitize_text_field( $guide_descs[ $i ] ?? '' ),
-			'url'         => esc_url_raw( $guide_urls[ $i ] ?? '' ),
+			'url'         => sanitize_text_field( $guide_urls[ $i ] ?? '' ),
 			'icon'        => in_array( $icon, $allowed_icons, true ) ? $icon : 'book-open',
 		];
 	}
@@ -327,7 +327,7 @@ function g6_settings_page_render(): void {
 											<?php endforeach; ?>
 										</select>
 										<input type="text" name="guide_desc[]" value="<?php echo esc_attr( $guide['description'] ); ?>" placeholder="Short description (optional)" class="regular-text" style="width:100%;">
-										<input type="url"  name="guide_url[]"  value="<?php echo esc_attr( $guide['url'] ); ?>"         placeholder="https://…"   class="regular-text" style="width:100%;">
+										<input type="text" name="guide_url[]"  value="<?php echo esc_attr( $guide['url'] ); ?>"         placeholder="https://… or #"   class="regular-text" style="width:100%;">
 									</div>
 									<button type="button" onclick="g6RemoveGuide(this)" class="g6-remove-btn" title="Remove">&times;</button>
 								</div>
@@ -570,6 +570,44 @@ function g6_settings_page_render(): void {
 					switchTab(this.dataset.tab);
 				});
 			});
+
+			// Cross-tab validation guard: if a field on a hidden tab is invalid,
+			// switch to that tab and show a clear error instead of silently blocking.
+			document.getElementById('g6-settings-form').addEventListener('submit', function(e) {
+				var firstOffTabInvalid = null;
+				var errorTabLabels    = [];
+
+				this.querySelectorAll('input, textarea, select').forEach(function(field) {
+					if (!field.checkValidity()) {
+						var panel = field.closest('.g6-tab-panel');
+						if (panel && panel.style.display === 'none') {
+							if (!firstOffTabInvalid) firstOffTabInvalid = panel;
+							var tabId  = panel.id.replace('g6-tab-', '');
+							var tabEl  = document.querySelector('#g6-tab-nav [data-tab="' + tabId + '"]');
+							var label  = tabEl ? tabEl.textContent.trim() : tabId;
+							if (errorTabLabels.indexOf(label) === -1) errorTabLabels.push(label);
+						}
+					}
+				});
+
+				if (firstOffTabInvalid) {
+					e.preventDefault();
+					switchTab(firstOffTabInvalid.id.replace('g6-tab-', ''));
+					var notice = document.getElementById('g6-cross-tab-error');
+					if (!notice) {
+						notice = document.createElement('div');
+						notice.id        = 'g6-cross-tab-error';
+						notice.className = 'notice notice-error';
+						notice.innerHTML = '<p></p>';
+						var form = document.getElementById('g6-settings-form');
+						form.insertBefore(notice, form.firstChild);
+					}
+					notice.querySelector('p').textContent =
+						'Please fix the required fields on the following tab' +
+						(errorTabLabels.length > 1 ? 's' : '') + ': ' + errorTabLabels.join(', ');
+					notice.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				}
+			});
 		});
 	})();
 
@@ -594,7 +632,7 @@ function g6_settings_page_render(): void {
 				'<input type="text" name="guide_title[]" placeholder="Title" class="regular-text" style="width:100%;">' +
 				g6BuildIconSelect('guide_icon[]') +
 				'<input type="text" name="guide_desc[]" placeholder="Short description (optional)" class="regular-text" style="width:100%;">' +
-				'<input type="url"  name="guide_url[]"  placeholder="https://…" class="regular-text" style="width:100%;">' +
+				'<input type="text" name="guide_url[]"  placeholder="https://… or #" class="regular-text" style="width:100%;">' +
 			'</div>' +
 			'<button type="button" onclick="g6RemoveGuide(this)" class="g6-remove-btn" title="Remove">&times;</button>';
 		document.getElementById('g6-guides-repeater').appendChild(row);
