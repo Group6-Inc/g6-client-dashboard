@@ -397,64 +397,115 @@ function g6_settings_page_render(): void {
 			<!-- ═══════════════════════════════════════════════════════════ -->
 			<div class="g6-tab-panel" id="g6-tab-tracking" style="display:none">
 
-				<p style="margin:16px 0; color:#646970;">Enter tracking IDs below. Scripts are injected automatically into the site's <code>&lt;head&gt;</code>. Leave a field blank to disable that platform.</p>
+				<?php
+				$tracking = $cfg['tracking'] ?? [];
 
-				<?php $tracking = $cfg['tracking'] ?? []; ?>
+				// Helper: render one tracking card.
+				// $args keys: id, name, label, placeholder, badge_text, badge_bg, badge_color, title, desc
+				function g6_tracking_card( array $args, array $tracking ): void {
+					$value  = trim( $tracking[ $args['name'] ] ?? '' );
+					$active = $value !== '';
+					$extra  = isset( $args['full'] ) ? ' g6t-card--full' : '';
+					$extra .= $active ? ' g6t-card--active' : '';
+					?>
+					<div class="g6t-card<?php echo $extra; ?>" data-card="<?php echo esc_attr( $args['name'] ); ?>">
+						<div class="g6t-card__header">
+							<span class="g6t-badge" style="background:<?php echo esc_attr( $args['badge_bg'] ); ?>;color:<?php echo esc_attr( $args['badge_color'] ); ?>;">
+								<?php echo esc_html( $args['badge_text'] ); ?>
+							</span>
+							<div>
+								<h3 class="g6t-card__title"><?php echo esc_html( $args['title'] ); ?></h3>
+								<p class="g6t-card__desc"><?php echo esc_html( $args['desc'] ); ?></p>
+							</div>
+						</div>
+						<div class="g6t-card__body">
+							<label class="g6t-card__label" for="<?php echo esc_attr( $args['id'] ); ?>"><?php echo esc_html( $args['label'] ); ?></label>
+							<input
+								type="text"
+								id="<?php echo esc_attr( $args['id'] ); ?>"
+								name="<?php echo esc_attr( $args['name'] ); ?>"
+								value="<?php echo esc_attr( $value ); ?>"
+								class="g6t-card__input"
+								placeholder="<?php echo esc_attr( $args['placeholder'] ); ?>"
+							>
+						</div>
+						<div class="g6t-status <?php echo $active ? 'g6t-status--active' : 'g6t-status--inactive'; ?>">
+							<span class="g6t-status__dot"></span>
+							<?php echo $active ? 'Active' : 'Not configured'; ?>
+						</div>
+					</div>
+					<?php
+				}
+				?>
 
-				<h2 class="title">Google Tag Manager</h2>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><label for="gtm_id">Container ID</label></th>
-						<td>
-							<input type="text" id="gtm_id" name="gtm_id" value="<?php echo esc_attr( $tracking['gtm_id'] ?? '' ); ?>" class="regular-text" placeholder="GTM-XXXXXXX">
-							<p class="description">Injects the GTM snippet into <code>&lt;head&gt;</code> and the noscript fallback after <code>&lt;body&gt;</code>.</p>
-						</td>
-					</tr>
-				</table>
+				<div class="g6t-page-header">
+					<p class="g6t-page-header__desc">Scripts inject automatically into <code>&lt;head&gt;</code> on the frontend. Leave a field blank to disable that platform.</p>
+				</div>
 
-				<h2 class="title">Google Ads</h2>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><label for="google_ads_id">Conversion ID</label></th>
-						<td>
-							<input type="text" id="google_ads_id" name="google_ads_id" value="<?php echo esc_attr( $tracking['google_ads_id'] ?? '' ); ?>" class="regular-text" placeholder="AW-XXXXXXXXXX">
-							<p class="description">Injects the global site tag (gtag.js) for Google Ads remarketing and conversion tracking.</p>
-						</td>
-					</tr>
-				</table>
+				<div class="g6t-grid">
 
-				<h2 class="title">Meta (Facebook) Pixel</h2>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><label for="facebook_pixel_id">Pixel ID</label></th>
-						<td>
-							<input type="text" id="facebook_pixel_id" name="facebook_pixel_id" value="<?php echo esc_attr( $tracking['facebook_pixel_id'] ?? '' ); ?>" class="regular-text" placeholder="123456789012345">
-							<p class="description">Injects the Meta Pixel base code and fires a PageView event on every page.</p>
-						</td>
-					</tr>
-				</table>
+					<?php g6_tracking_card( [
+						'id'          => 'gtm_id',
+						'name'        => 'gtm_id',
+						'label'       => 'Container ID',
+						'placeholder' => 'GTM-XXXXXXX',
+						'badge_text'  => 'GTM',
+						'badge_bg'    => '#e8f0fe',
+						'badge_color' => '#1a73e8',
+						'title'       => 'Google Tag Manager',
+						'desc'        => 'Injects the GTM snippet into <head> and a noscript fallback after <body>. Use GTM to manage all other tags from one place.',
+						'full'        => true,
+					], $tracking ); ?>
 
-				<h2 class="title">X (Twitter) Pixel</h2>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><label for="x_pixel_id">Pixel ID</label></th>
-						<td>
-							<input type="text" id="x_pixel_id" name="x_pixel_id" value="<?php echo esc_attr( $tracking['x_pixel_id'] ?? '' ); ?>" class="regular-text" placeholder="oabcd">
-							<p class="description">Injects the X universal website tag.</p>
-						</td>
-					</tr>
-				</table>
+					<?php g6_tracking_card( [
+						'id'          => 'google_ads_id',
+						'name'        => 'google_ads_id',
+						'label'       => 'Conversion ID',
+						'placeholder' => 'AW-XXXXXXXXXX',
+						'badge_text'  => 'ADS',
+						'badge_bg'    => '#fef9e7',
+						'badge_color' => '#d97706',
+						'title'       => 'Google Ads',
+						'desc'        => 'Injects the global site tag (gtag.js) for remarketing and conversion tracking.',
+					], $tracking ); ?>
 
-				<h2 class="title">Microsoft Clarity</h2>
-				<table class="form-table">
-					<tr>
-						<th scope="row"><label for="clarity_project_id">Project ID</label></th>
-						<td>
-							<input type="text" id="clarity_project_id" name="clarity_project_id" value="<?php echo esc_attr( $tracking['clarity_project_id'] ?? '' ); ?>" class="regular-text" placeholder="abc123xyz0">
-							<p class="description">Injects the Clarity session recording and heatmap script.</p>
-						</td>
-					</tr>
-				</table>
+					<?php g6_tracking_card( [
+						'id'          => 'facebook_pixel_id',
+						'name'        => 'facebook_pixel_id',
+						'label'       => 'Pixel ID',
+						'placeholder' => '123456789012345',
+						'badge_text'  => 'META',
+						'badge_bg'    => '#eff6ff',
+						'badge_color' => '#2563eb',
+						'title'       => 'Meta Pixel',
+						'desc'        => 'Injects the Meta Pixel base code and fires a PageView event on every page load.',
+					], $tracking ); ?>
+
+					<?php g6_tracking_card( [
+						'id'          => 'x_pixel_id',
+						'name'        => 'x_pixel_id',
+						'label'       => 'Pixel ID',
+						'placeholder' => 'oabcd',
+						'badge_text'  => 'X',
+						'badge_bg'    => '#f3f4f6',
+						'badge_color' => '#111827',
+						'title'       => 'X (Twitter) Pixel',
+						'desc'        => 'Injects the X universal website tag for audience targeting and conversion tracking.',
+					], $tracking ); ?>
+
+					<?php g6_tracking_card( [
+						'id'          => 'clarity_project_id',
+						'name'        => 'clarity_project_id',
+						'label'       => 'Project ID',
+						'placeholder' => 'abc123xyz0',
+						'badge_text'  => 'CLA',
+						'badge_bg'    => '#f0f4ff',
+						'badge_color' => '#4f46e5',
+						'title'       => 'Microsoft Clarity',
+						'desc'        => 'Injects the Clarity session recording and heatmap script.',
+					], $tracking ); ?>
+
+				</div><!-- /.g6t-grid -->
 
 			</div><!-- /tab: tracking -->
 
@@ -527,9 +578,12 @@ function g6_settings_page_render(): void {
 	</div><!-- .wrap -->
 
 	<style>
+		/* ── Tab chrome ────────────────────────────────────────────── */
 		#g6-tab-nav { margin-top: 16px; margin-bottom: 0; }
 		#g6-settings-form { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 24px 8px; margin-top: 0; }
 		#g6-settings-form .g6-tab-panel { padding-top: 8px; }
+
+		/* ── Repeater remove button ────────────────────────────────── */
 		.g6-remove-btn {
 			flex-shrink: 0;
 			background: none;
@@ -542,6 +596,111 @@ function g6_settings_page_render(): void {
 			line-height: 1;
 		}
 		.g6-remove-btn:hover { background: #fbeaea; border-color: #b32d2e; }
+
+		/* ── Tracking tab ──────────────────────────────────────────── */
+		.g6t-page-header { padding: 20px 0 4px; }
+		.g6t-page-header__desc { margin: 0; font-size: 13px; color: #6b7280; }
+		.g6t-page-header__desc code { background: #f3f4f6; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+		.g6t-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 14px;
+			padding: 16px 0 24px;
+		}
+		@media (max-width: 1100px) { .g6t-grid { grid-template-columns: 1fr; } }
+
+		.g6t-card {
+			background: #fff;
+			border: 1.5px solid #e5e7eb;
+			border-radius: 10px;
+			padding: 20px;
+			display: flex;
+			flex-direction: column;
+			gap: 14px;
+			box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+			transition: box-shadow 0.15s ease, border-color 0.15s ease;
+		}
+		.g6t-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.08); border-color: #d1d5db; }
+		.g6t-card--full  { grid-column: 1 / -1; }
+		.g6t-card--active { border-color: #6ee7b7; background: #f0fdf4; }
+		.g6t-card--active:hover { border-color: #34d399; }
+
+		.g6t-card__header { display: flex; align-items: flex-start; gap: 12px; }
+
+		.g6t-badge {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			min-width: 42px;
+			height: 42px;
+			padding: 0 8px;
+			border-radius: 8px;
+			font-size: 10.5px;
+			font-weight: 700;
+			letter-spacing: 0.4px;
+			flex-shrink: 0;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		}
+
+		.g6t-card__title {
+			font-size: 14.5px;
+			font-weight: 600;
+			color: #111827;
+			margin: 0 0 4px;
+			line-height: 1.3;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		}
+		.g6t-card__desc { font-size: 12px; color: #6b7280; margin: 0; line-height: 1.55; }
+
+		.g6t-card__body { display: flex; flex-direction: column; gap: 6px; }
+
+		.g6t-card__label {
+			display: block;
+			font-size: 10.5px;
+			font-weight: 600;
+			text-transform: uppercase;
+			letter-spacing: 0.7px;
+			color: #6b7280;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		}
+
+		.g6t-card__input {
+			width: 100%;
+			padding: 9px 12px;
+			border: 1.5px solid #d1d5db;
+			border-radius: 6px;
+			font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+			font-size: 13px;
+			color: #111827;
+			background: #f9fafb;
+			box-sizing: border-box;
+			transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+		}
+		.g6t-card__input:focus {
+			outline: none;
+			border-color: #6366f1;
+			background: #fff;
+			box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+		}
+		.g6t-card--active .g6t-card__input { background: #fff; border-color: #a7f3d0; }
+		.g6t-card--active .g6t-card__input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+		.g6t-card__input::placeholder { color: #9ca3af; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12.5px; }
+
+		.g6t-status {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+			font-size: 11.5px;
+			font-weight: 500;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+			margin-top: 2px;
+		}
+		.g6t-status__dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+		.g6t-status--active  { color: #059669; }
+		.g6t-status--active  .g6t-status__dot { background: #10b981; box-shadow: 0 0 0 2px #a7f3d0; }
+		.g6t-status--inactive { color: #9ca3af; }
+		.g6t-status--inactive .g6t-status__dot { background: #d1d5db; }
 	</style>
 
 	<script>
@@ -670,6 +829,20 @@ function g6_settings_page_render(): void {
 	}
 
 	function g6RemoveService(btn) { btn.closest('.g6-svc-row').remove(); }
+
+	// ── Tracking card live status ─────────────────────────────────────────────
+	document.addEventListener('DOMContentLoaded', function() {
+		document.querySelectorAll('.g6t-card__input').forEach(function(input) {
+			input.addEventListener('input', function() {
+				var card   = this.closest('.g6t-card');
+				var status = card.querySelector('.g6t-status');
+				var active = this.value.trim() !== '';
+				card.classList.toggle('g6t-card--active', active);
+				status.className = 'g6t-status ' + (active ? 'g6t-status--active' : 'g6t-status--inactive');
+				status.innerHTML = '<span class="g6t-status__dot"></span>' + (active ? 'Active' : 'Not configured');
+			});
+		});
+	});
 
 	// ── Widget visibility → Content tab settings ──────────────────────────────
 	// Keys that have a corresponding settings section on the Content tab.
