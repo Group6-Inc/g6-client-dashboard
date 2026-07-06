@@ -255,6 +255,90 @@ function g6_get_dashboard_css(): string {
 	.g6-dashboard__footer a:hover { text-decoration: underline; }
 	.g6-dashboard__footer-logo { display: inline-flex; margin-bottom: 6px; }
 	.g6-dashboard__footer-logo path:not([fill="#FF6E61"]) { fill: #1D1D1B; }
+
+	/* ── Body layout (sidebar + main) ── */
+	.g6-dashboard__body { display: grid; grid-template-columns: 268px 1fr; gap: 24px; align-items: start; margin-bottom: 24px; }
+	.g6-dashboard__main .g6-dashboard__grid { margin-bottom: 0; }
+	@media (max-width: 1100px) {
+		.g6-dashboard__body { grid-template-columns: 1fr; }
+		.g6-dashboard__sidebar { order: 2; }
+		.g6-dashboard__main   { order: 1; }
+	}
+
+	/* ── Sidebar shell ── */
+	.g6-sidebar {
+		background: var(--g6-secondary);
+		border-radius: var(--g6-radius-lg);
+		padding: 22px;
+		position: sticky;
+		top: 32px;
+	}
+	.g6-sidebar__section {
+		padding-bottom: 18px;
+		margin-bottom: 18px;
+		border-bottom: 1px solid rgba(255,255,255,0.07);
+	}
+	.g6-sidebar__section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
+	.g6-sidebar__section-title {
+		font-family: var(--g6-font-heading);
+		font-size: 9.5px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 1.3px;
+		color: rgba(255,255,255,0.3);
+		margin: 0 0 12px;
+	}
+
+	/* ── Tracking pills ── */
+	.g6-sidebar__tags { display: flex; flex-direction: column; gap: 7px; }
+	.g6-sidebar__tag {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 10px;
+		background: rgba(255,255,255,0.05);
+		border: 1px solid rgba(255,255,255,0.07);
+		border-radius: 8px;
+		transition: background 0.15s ease;
+	}
+	.g6-sidebar__tag:hover { background: rgba(255,255,255,0.08); }
+	.g6-sidebar__tag-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 34px;
+		height: 20px;
+		padding: 0 6px;
+		border-radius: 4px;
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.5px;
+		flex-shrink: 0;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
+	.g6-sidebar__tag-label {
+		font-size: 12px;
+		color: rgba(255,255,255,0.75);
+		flex: 1;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.g6-sidebar__tag-dot {
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		background: #10b981;
+		box-shadow: 0 0 0 2px rgba(16,185,129,0.22);
+		flex-shrink: 0;
+	}
+	.g6-sidebar__empty {
+		font-size: 12px;
+		color: rgba(255,255,255,0.25);
+		font-style: italic;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
 	';
 }
 
@@ -264,6 +348,14 @@ function g6_render_dashboard(): void {
 	$cfg   = g6_get_client_config();
 	$user  = wp_get_current_user();
 	$first = $user->first_name ?: $user->display_name;
+
+	$tracking        = $cfg['tracking'] ?? [];
+	$tracking_pills  = [];
+	if ( ! empty( $tracking['gtm_id'] ) )             $tracking_pills[] = [ 'badge' => 'GTM',  'label' => 'Google Tag Manager',  'bg' => '#1a73e8', 'color' => '#fff' ];
+	if ( ! empty( $tracking['google_ads_id'] ) )      $tracking_pills[] = [ 'badge' => 'ADS',  'label' => 'Google Ads',           'bg' => '#fbbc04', 'color' => '#1a1a1a' ];
+	if ( ! empty( $tracking['facebook_pixel_id'] ) )  $tracking_pills[] = [ 'badge' => 'META', 'label' => 'Meta Pixel',            'bg' => '#1877f2', 'color' => '#fff' ];
+	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff' ];
+	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff' ];
 	?>
 	<div class="g6-dashboard">
 
@@ -299,6 +391,32 @@ function g6_render_dashboard(): void {
 			</div>
 		</div>
 
+		<div class="g6-dashboard__body">
+
+		<!-- Sidebar -->
+		<aside class="g6-dashboard__sidebar">
+			<div class="g6-sidebar">
+				<div class="g6-sidebar__section">
+					<p class="g6-sidebar__section-title">Active Tracking</p>
+					<?php if ( ! empty( $tracking_pills ) ) : ?>
+					<div class="g6-sidebar__tags">
+						<?php foreach ( $tracking_pills as $pill ) : ?>
+						<div class="g6-sidebar__tag">
+							<span class="g6-sidebar__tag-badge" style="background:<?php echo esc_attr( $pill['bg'] ); ?>;color:<?php echo esc_attr( $pill['color'] ); ?>;"><?php echo esc_html( $pill['badge'] ); ?></span>
+							<span class="g6-sidebar__tag-label"><?php echo esc_html( $pill['label'] ); ?></span>
+							<span class="g6-sidebar__tag-dot"></span>
+						</div>
+						<?php endforeach; ?>
+					</div>
+					<?php else : ?>
+					<p class="g6-sidebar__empty">No tracking tags active</p>
+					<?php endif; ?>
+				</div>
+			</div>
+		</aside>
+
+		<!-- Main -->
+		<div class="g6-dashboard__main">
 		<div class="g6-dashboard__grid">
 
 		<!-- How-to Guides -->
@@ -509,6 +627,9 @@ function g6_render_dashboard(): void {
 		<?php endif; ?>
 
 		</div><!-- /.g6-dashboard__grid -->
+		</div><!-- /.g6-dashboard__main -->
+
+		</div><!-- /.g6-dashboard__body -->
 
 		<!-- Footer -->
 		<div class="g6-dashboard__footer">
