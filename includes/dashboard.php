@@ -284,8 +284,8 @@ function g6_get_dashboard_css(): string {
 		text-transform: uppercase;
 		letter-spacing: 1.3px;
 		color: rgba(255,255,255,0.5);
-		margin: 0 0 20px;
 	}
+	#welcome-panel .g6-sidebar__section-title { margin: 0 0 14px !important; }
 
 	/* ── Tracking pills ── */
 	.g6-sidebar__tags { display: flex; flex-direction: column; gap: 7px; }
