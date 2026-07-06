@@ -21,7 +21,7 @@ jobs:
       - name: Get version from plugin file
         id: version
         run: |
-          BASE=$(grep "define.*G6_DASHBOARD_VERSION" g6-client-dashboard.php | grep -oP "[\d.]+")
+          BASE=$(grep "define.*G6_DASHBOARD_VERSION" g6-client-dashboard.php | grep -oP "[\d.]+" | tail -1)
           echo "VERSION=${BASE}-beta" >> $GITHUB_OUTPUT
           echo "BASE_VERSION=${BASE}" >> $GITHUB_OUTPUT
 
