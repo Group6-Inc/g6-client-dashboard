@@ -249,9 +249,6 @@ function g6_get_dashboard_css(): string {
 	.g6-card__cta-link { font-family: var(--g6-font-heading); font-size: 13px; font-weight: 600; color: var(--g6-primary); text-decoration: none; }
 	.g6-card__cta-link:hover { color: var(--g6-primary-dark); }
 
-	/* ── Sticky sidebar: override WP welcome panel overflow ── */
-	.welcome-panel-content { overflow: visible !important; }
-
 	/* ── Footer ── */
 	.g6-dashboard__footer { text-align: center; padding: 24px 0 8px; font-size: 12px; color: var(--g6-neutral-500); }
 	.g6-dashboard__footer a { color: var(--g6-primary); text-decoration: none; font-weight: 600; }
@@ -273,8 +270,6 @@ function g6_get_dashboard_css(): string {
 		background: var(--g6-secondary);
 		border-radius: var(--g6-radius-lg);
 		padding: 22px;
-		position: sticky;
-		top: 32px;
 	}
 	.g6-sidebar__section {
 		padding-bottom: 24px;
