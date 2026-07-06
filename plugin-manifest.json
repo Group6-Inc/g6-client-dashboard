@@ -3,8 +3,8 @@
   "slug": "g6-client-dashboard",
   "author": "<a href='https://group6inc.com'>Group6</a>",
   "author_profile": "https://group6inc.com",
-  "version": "0.3.4",
-  "download_url": "https://github.com/Group6-Inc/g6-client-dashboard/releases/download/v0.3.4/g6-client-dashboard-v0.3.4.zip",
+  "version": "0.3.5",
+  "download_url": "https://github.com/Group6-Inc/g6-client-dashboard/releases/download/v0.3.5/g6-client-dashboard-v0.3.5.zip",
   "requires": "6.0",
   "tested": "6.7",
   "requires_php": "8.0",
@@ -12,6 +12,6 @@
   "homepage": "https://group6inc.com",
   "sections": {
     "description": "Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.",
-    "changelog": "<h4>v0.3.4</h4><ul><li>Beta update channel — enable beta builds from the Plugin settings tab</li><li>Auto-updater now switches between stable and beta Gist manifests based on channel setting</li></ul><h4>v0.3.0</h4><ul><li>Settings page redesigned with 5 tabs: Dashboard, Content, Tracking, Developer Tools, Plugin</li><li>Tracking tab: GTM, Google Ads, Meta Pixel, X Pixel, Microsoft Clarity — IDs inject scripts automatically</li><li>Developer Tools tab: G6 Asset Manager integrated (enable/disable toggle)</li><li>All new settings gated to Group6 email users only</li></ul><h4>v0.1</h4><ul><li>Initial beta release</li></ul>"
+    "changelog": "<h4>v0.3.5</h4><ul><li>Client dashboard sidebar showing active tracking script indicators with hover tooltip</li><li>Settings redesign — Dashboard and Widgets tabs now use modern card layout</li><li>Widget visibility moved to Widgets tab with toggle switches per card</li><li>Content tab renamed to Widgets</li></ul><h4>v0.3.4</h4><ul><li>Beta update channel — enable beta builds from the Plugin settings tab</li><li>Auto-updater now switches between stable and beta Gist manifests based on channel setting</li></ul><h4>v0.3.0</h4><ul><li>Settings page redesigned with 5 tabs: Dashboard, Content, Tracking, Developer Tools, Plugin</li><li>Tracking tab: GTM, Google Ads, Meta Pixel, X Pixel, Microsoft Clarity — IDs inject scripts automatically</li><li>Developer Tools tab: G6 Asset Manager integrated (enable/disable toggle)</li><li>All new settings gated to Group6 email users only</li></ul><h4>v0.1</h4><ul><li>Initial beta release</li></ul>"
   }
 }
