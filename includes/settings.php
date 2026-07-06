@@ -170,6 +170,9 @@ function g6_settings_handle_save( array &$config ): void {
 	// ── Developer Tools tab ───────────────────────────────────────────────────
 	$config['asset_manager_enabled'] = isset( $_POST['asset_manager_enabled'] );
 
+	// ── Plugin tab ────────────────────────────────────────────────────────────
+	$config['beta_updates_enabled'] = isset( $_POST['beta_updates_enabled'] );
+
 	$config['last_updated'] = current_time( 'mysql' );
 
 	update_option( 'g6_client_config', $config );
@@ -565,6 +568,28 @@ function g6_settings_page_render(): void {
 					<tr>
 						<th scope="row">Last Saved</th>
 						<td><code><?php echo esc_html( $cfg['last_updated'] ); ?></code></td>
+					</tr>
+				</table>
+
+				<h2 class="title" style="margin-top:28px;">Update Channel</h2>
+				<table class="form-table">
+					<tr>
+						<th scope="row">Beta Updates</th>
+						<td>
+							<label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+								<input type="checkbox" name="beta_updates_enabled" value="1" <?php checked( ! empty( $cfg['beta_updates_enabled'] ) ); ?>>
+								Enable beta versions
+							</label>
+							<div style="margin-top:10px; padding:10px 14px; background:#fffbeb; border:1px solid #fbbf24; border-radius:6px; color:#92400e; font-size:12.5px; line-height:1.5;">
+								<strong>Beta channel:</strong> Pre-release builds for internal testing. May contain bugs or incomplete features. Only enable on test/staging sites — not on client production sites.
+							</div>
+							<p class="description" style="margin-top:8px;">
+								When enabled, the auto-updater checks the <code>beta</code> branch builds instead of stable releases.
+								<?php if ( ! empty( $cfg['beta_updates_enabled'] ) ) : ?>
+									<strong style="color:#b45309;">Beta channel is currently active.</strong>
+								<?php endif; ?>
+							</p>
+						</td>
 					</tr>
 				</table>
 

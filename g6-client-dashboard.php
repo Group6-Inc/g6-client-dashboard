@@ -3,7 +3,7 @@
  * Plugin Name:  Group6 Client Dashboard
  * Plugin URI:   https://github.com/Group6-Inc/g6-client-dashboard
  * Description:  Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.
- * Version:      0.3.3
+ * Version:      0.3.4
  * Author:       Group6
  * Author URI:   https://group6inc.com
  * License:      Proprietary
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'G6_DASHBOARD_VERSION',   '0.3.3' );
+define( 'G6_DASHBOARD_VERSION',   '0.3.4' );
 define( 'G6_DASHBOARD_FILE',      __FILE__ );
 define( 'G6_DASHBOARD_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
@@ -27,7 +27,8 @@ define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
  */
 define( 'G6_DASHBOARD_GITHUB_ORG',   'Group6-Inc' );
 define( 'G6_DASHBOARD_GITHUB_REPO',  'g6-client-dashboard' );
-define( 'G6_DASHBOARD_MANIFEST_URL', 'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard.json' );
+define( 'G6_DASHBOARD_MANIFEST_URL',      'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard.json' );
+define( 'G6_DASHBOARD_MANIFEST_URL_BETA', 'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard-beta.json' );
 
 /**
  * Support ticket destination.

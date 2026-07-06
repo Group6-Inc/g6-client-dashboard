@@ -36,10 +36,26 @@ class Updater {
 		add_action( 'admin_init',                    [ $this, 'handle_force_refresh' ] );
 	}
 
+	// ── Beta channel helpers ───────────────────────────────────────────
+
+	private function is_beta(): bool {
+		$cfg = get_option( 'g6_client_config', [] );
+		return ! empty( $cfg['beta_updates_enabled'] );
+	}
+
+	private function active_manifest_url(): string {
+		return $this->is_beta() ? G6_DASHBOARD_MANIFEST_URL_BETA : G6_DASHBOARD_MANIFEST_URL;
+	}
+
+	private function active_cache_key(): string {
+		return $this->is_beta() ? 'g6_dashboard_beta_manifest' : $this->cache_key;
+	}
+
 	// ── Fetch & cache the remote manifest ──────────────────────────────
 
 	private function fetch_manifest(): object|false {
-		$cached = get_transient( $this->cache_key );
+		$cache_key = $this->active_cache_key();
+		$cached    = get_transient( $cache_key );
 
 		if ( false === $cached || ! $this->cache_allowed ) {
 			$args = [
@@ -47,7 +63,7 @@ class Updater {
 				'headers' => [ 'Accept' => 'application/json' ],
 			];
 
-			$response = wp_remote_get( G6_DASHBOARD_MANIFEST_URL, $args );
+			$response = wp_remote_get( $this->active_manifest_url(), $args );
 
 			if (
 				is_wp_error( $response ) ||
@@ -58,7 +74,7 @@ class Updater {
 			}
 
 			// Cache for 12 hours to reduce API calls.
-			set_transient( $this->cache_key, $response, 12 * HOUR_IN_SECONDS );
+			set_transient( $cache_key, $response, 12 * HOUR_IN_SECONDS );
 			$cached = $response;
 		}
 
@@ -142,6 +158,7 @@ class Updater {
 
 	public function purge_manifest_cache(): void {
 		delete_transient( $this->cache_key );
+		delete_transient( 'g6_dashboard_beta_manifest' );
 	}
 
 	// ── Handle ?g6-refresh-update=1 URL parameter ─────────────────────
@@ -156,6 +173,7 @@ class Updater {
 		}
 
 		delete_transient( $this->cache_key );
+		delete_transient( 'g6_dashboard_beta_manifest' );
 		delete_site_transient( 'update_plugins' );
 
 		wp_safe_redirect( remove_query_arg( [ 'g6-refresh-update', '_wpnonce' ] ) );

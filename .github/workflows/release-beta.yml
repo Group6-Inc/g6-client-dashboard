@@ -1,0 +1,87 @@
+name: Beta Release
+
+on:
+  push:
+    branches:
+      - beta
+
+jobs:
+  beta-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version from plugin file
+        id: version
+        run: |
+          BASE=$(grep "define.*G6_DASHBOARD_VERSION" g6-client-dashboard.php | grep -oP "[\d.]+")
+          echo "VERSION=${BASE}-beta" >> $GITHUB_OUTPUT
+          echo "BASE_VERSION=${BASE}" >> $GITHUB_OUTPUT
+
+      - name: Build beta zip
+        run: |
+          mkdir -p build
+          rsync -av --exclude='.git' \
+                    --exclude='.github' \
+                    --exclude='build' \
+                    --exclude='*.md' \
+                    --exclude='plugin-manifest.json' \
+                    . build/g6-client-dashboard/
+          cd build
+          zip -r g6-client-dashboard-beta.zip g6-client-dashboard/
+
+      - name: Delete existing beta-latest release and tag
+        run: |
+          gh release delete beta-latest --yes 2>/dev/null || true
+          git push origin :refs/tags/beta-latest 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create beta GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: beta-latest
+          name: "Beta Build — v${{ steps.version.outputs.VERSION }}"
+          prerelease: true
+          generate_release_notes: false
+          body: |
+            **Beta build** from the `beta` branch.
+            Base version: `${{ steps.version.outputs.BASE_VERSION }}`
+            Built: ${{ github.run_id }} @ ${{ github.sha }}
+
+            Install via the **G6 Dashboard Settings → Plugin → Enable beta versions** toggle.
+          files: build/g6-client-dashboard-beta.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update beta Gist manifest
+        env:
+          GIST_TOKEN: ${{ secrets.GABRIEL_GIST_TOKEN }}
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          DATE=$(date -u '+%Y-%m-%d %H:%M:%S')
+          DOWNLOAD_URL="https://github.com/Group6-Inc/g6-client-dashboard/releases/download/beta-latest/g6-client-dashboard-beta.zip"
+
+          CONTENT=$(jq \
+            --arg v "$VERSION" \
+            --arg url "$DOWNLOAD_URL" \
+            --arg date "$DATE" \
+            '.version = $v | .download_url = $url | .last_updated = $date' \
+            plugin-manifest.json)
+
+          PAYLOAD=$(jq -n \
+            --arg content "$CONTENT" \
+            '{"files": {"g6-client-dashboard-beta.json": {"content": $content}}}')
+
+          curl -s -X PATCH \
+            -H "Authorization: token $GIST_TOKEN" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/gists/8d8b3d50ba384da12359e34c57efe39a \
+            -d "$PAYLOAD"

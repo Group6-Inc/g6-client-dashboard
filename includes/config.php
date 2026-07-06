@@ -184,6 +184,9 @@ function g6_default_config(): array {
 		// Developer tools.
 		'asset_manager_enabled' => false,
 
+		// Update channel.
+		'beta_updates_enabled'  => false,
+
 		'use_search_console' => false,
 		'use_gbp_api'        => false,
 		'last_updated'       => current_time( 'mysql' ),
