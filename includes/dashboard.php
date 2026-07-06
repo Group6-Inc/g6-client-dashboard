@@ -249,6 +249,9 @@ function g6_get_dashboard_css(): string {
 	.g6-card__cta-link { font-family: var(--g6-font-heading); font-size: 13px; font-weight: 600; color: var(--g6-primary); text-decoration: none; }
 	.g6-card__cta-link:hover { color: var(--g6-primary-dark); }
 
+	/* ── Sticky sidebar: override WP welcome panel overflow ── */
+	.welcome-panel-content { overflow: visible !important; }
+
 	/* ── Footer ── */
 	.g6-dashboard__footer { text-align: center; padding: 24px 0 8px; font-size: 12px; color: var(--g6-neutral-500); }
 	.g6-dashboard__footer a { color: var(--g6-primary); text-decoration: none; font-weight: 600; }
@@ -274,8 +277,8 @@ function g6_get_dashboard_css(): string {
 		top: 32px;
 	}
 	.g6-sidebar__section {
-		padding-bottom: 18px;
-		margin-bottom: 18px;
+		padding-bottom: 24px;
+		margin-bottom: 24px;
 		border-bottom: 1px solid rgba(255,255,255,0.07);
 	}
 	.g6-sidebar__section:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
@@ -285,8 +288,8 @@ function g6_get_dashboard_css(): string {
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 1.3px;
-		color: rgba(255,255,255,0.3);
-		margin: 0 0 12px;
+		color: rgba(255,255,255,0.5);
+		margin: 0 0 14px;
 	}
 
 	/* ── Tracking pills ── */
@@ -333,6 +336,30 @@ function g6_get_dashboard_css(): string {
 		box-shadow: 0 0 0 2px rgba(16,185,129,0.22);
 		flex-shrink: 0;
 	}
+	/* ── Tracking ID tooltip ── */
+	.g6-sidebar__tag[data-g6-tip] { position: relative; }
+	.g6-sidebar__tag[data-g6-tip]::before {
+		content: attr(data-g6-tip);
+		position: absolute;
+		bottom: calc(100% + 7px);
+		left: 50%;
+		transform: translateX(-50%);
+		background: #0d1117;
+		color: #c9d1d9;
+		font-size: 11px;
+		font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+		padding: 5px 10px;
+		border-radius: 5px;
+		white-space: nowrap;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.15s ease;
+		z-index: 200;
+		border: 1px solid rgba(255,255,255,0.1);
+		box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+	}
+	.g6-sidebar__tag[data-g6-tip]:hover::before { opacity: 1; }
+
 	.g6-sidebar__empty {
 		font-size: 12px;
 		color: rgba(255,255,255,0.25);
@@ -351,11 +378,11 @@ function g6_render_dashboard(): void {
 
 	$tracking        = $cfg['tracking'] ?? [];
 	$tracking_pills  = [];
-	if ( ! empty( $tracking['gtm_id'] ) )             $tracking_pills[] = [ 'badge' => 'GTM',  'label' => 'Google Tag Manager',  'bg' => '#1a73e8', 'color' => '#fff' ];
-	if ( ! empty( $tracking['google_ads_id'] ) )      $tracking_pills[] = [ 'badge' => 'ADS',  'label' => 'Google Ads',           'bg' => '#fbbc04', 'color' => '#1a1a1a' ];
-	if ( ! empty( $tracking['facebook_pixel_id'] ) )  $tracking_pills[] = [ 'badge' => 'META', 'label' => 'Meta Pixel',            'bg' => '#1877f2', 'color' => '#fff' ];
-	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff' ];
-	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff' ];
+	if ( ! empty( $tracking['gtm_id'] ) )             $tracking_pills[] = [ 'badge' => 'GTM',  'label' => 'Google Tag Manager',  'bg' => '#1a73e8', 'color' => '#fff',     'id' => $tracking['gtm_id'] ];
+	if ( ! empty( $tracking['google_ads_id'] ) )      $tracking_pills[] = [ 'badge' => 'ADS',  'label' => 'Google Ads',           'bg' => '#fbbc04', 'color' => '#1a1a1a', 'id' => $tracking['google_ads_id'] ];
+	if ( ! empty( $tracking['facebook_pixel_id'] ) )  $tracking_pills[] = [ 'badge' => 'META', 'label' => 'Meta Pixel',            'bg' => '#1877f2', 'color' => '#fff',     'id' => $tracking['facebook_pixel_id'] ];
+	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff',     'id' => $tracking['x_pixel_id'] ];
+	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff',     'id' => $tracking['clarity_project_id'] ];
 	?>
 	<div class="g6-dashboard">
 
@@ -401,7 +428,7 @@ function g6_render_dashboard(): void {
 					<?php if ( ! empty( $tracking_pills ) ) : ?>
 					<div class="g6-sidebar__tags">
 						<?php foreach ( $tracking_pills as $pill ) : ?>
-						<div class="g6-sidebar__tag">
+						<div class="g6-sidebar__tag" data-g6-tip="<?php echo esc_attr( $pill['id'] ); ?>">
 							<span class="g6-sidebar__tag-badge" style="background:<?php echo esc_attr( $pill['bg'] ); ?>;color:<?php echo esc_attr( $pill['color'] ); ?>;"><?php echo esc_html( $pill['badge'] ); ?></span>
 							<span class="g6-sidebar__tag-label"><?php echo esc_html( $pill['label'] ); ?></span>
 							<span class="g6-sidebar__tag-dot"></span>
