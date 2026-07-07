@@ -175,6 +175,7 @@ function g6_default_config(): array {
 		// Tracking & analytics script IDs.
 		'tracking' => [
 			'gtm_id'            => '',
+			'ga_measurement_id' => '',
 			'google_ads_id'     => '',
 			'facebook_pixel_id' => '',
 			'x_pixel_id'        => '',

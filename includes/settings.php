@@ -161,6 +161,7 @@ function g6_settings_handle_save( array &$config ): void {
 	// ── Tracking tab ─────────────────────────────────────────────────────────
 	$config['tracking'] = [
 		'gtm_id'            => sanitize_text_field( $_POST['gtm_id']            ?? '' ),
+		'ga_measurement_id' => sanitize_text_field( $_POST['ga_measurement_id'] ?? '' ),
 		'google_ads_id'     => sanitize_text_field( $_POST['google_ads_id']     ?? '' ),
 		'facebook_pixel_id' => sanitize_text_field( $_POST['facebook_pixel_id'] ?? '' ),
 		'x_pixel_id'        => sanitize_text_field( $_POST['x_pixel_id']        ?? '' ),
@@ -514,6 +515,18 @@ function g6_settings_page_render(): void {
 						'title'       => 'Google Tag Manager',
 						'desc'        => 'Injects the GTM snippet into <head> and a noscript fallback after <body>. Use GTM to manage all other tags from one place.',
 						'full'        => true,
+					], $tracking ); ?>
+
+					<?php g6_tracking_card( [
+						'id'          => 'ga_measurement_id',
+						'name'        => 'ga_measurement_id',
+						'label'       => 'Measurement ID',
+						'placeholder' => 'G-XXXXXXXXXX',
+						'badge_text'  => 'GA4',
+						'badge_bg'    => '#fef3e2',
+						'badge_color' => '#e37400',
+						'title'       => 'Google Analytics 4',
+						'desc'        => 'Injects the GA4 measurement script for traffic and behaviour analytics.',
 					], $tracking ); ?>
 
 					<?php g6_tracking_card( [

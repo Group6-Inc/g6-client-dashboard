@@ -263,6 +263,7 @@ function g6_get_dashboard_css(): string {
 
 	/* ── Body layout (sidebar + main) ── */
 	.g6-dashboard__body { display: grid; grid-template-columns: 268px 1fr; gap: 24px; align-items: start; margin-bottom: 24px; }
+	.g6-dashboard__body--no-sidebar { grid-template-columns: 1fr; }
 	.g6-dashboard__main .g6-dashboard__grid { margin-bottom: 0; }
 	@media (max-width: 1100px) {
 		.g6-dashboard__body { grid-template-columns: 1fr; }
@@ -379,6 +380,7 @@ function g6_render_dashboard(): void {
 	$tracking        = $cfg['tracking'] ?? [];
 	$tracking_pills  = [];
 	if ( ! empty( $tracking['gtm_id'] ) )             $tracking_pills[] = [ 'badge' => 'GTM',  'label' => 'Google Tag Manager',  'bg' => '#1a73e8', 'color' => '#fff',     'id' => $tracking['gtm_id'] ];
+	if ( ! empty( $tracking['ga_measurement_id'] ) )  $tracking_pills[] = [ 'badge' => 'GA4',  'label' => 'Google Analytics 4',   'bg' => '#e37400', 'color' => '#fff',     'id' => $tracking['ga_measurement_id'] ];
 	if ( ! empty( $tracking['google_ads_id'] ) )      $tracking_pills[] = [ 'badge' => 'ADS',  'label' => 'Google Ads',           'bg' => '#fbbc04', 'color' => '#1a1a1a', 'id' => $tracking['google_ads_id'] ];
 	if ( ! empty( $tracking['facebook_pixel_id'] ) )  $tracking_pills[] = [ 'badge' => 'META', 'label' => 'Meta Pixel',            'bg' => '#1877f2', 'color' => '#fff',     'id' => $tracking['facebook_pixel_id'] ];
 	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff',     'id' => $tracking['x_pixel_id'] ];
@@ -418,14 +420,14 @@ function g6_render_dashboard(): void {
 			</div>
 		</div>
 
-		<div class="g6-dashboard__body">
+		<div class="g6-dashboard__body<?php echo empty( $tracking_pills ) ? ' g6-dashboard__body--no-sidebar' : ''; ?>">
 
 		<!-- Sidebar -->
+		<?php if ( ! empty( $tracking_pills ) ) : ?>
 		<aside class="g6-dashboard__sidebar">
 			<div class="g6-sidebar">
 				<div class="g6-sidebar__section">
 					<p class="g6-sidebar__section-title">Active Tracking</p>
-					<?php if ( ! empty( $tracking_pills ) ) : ?>
 					<div class="g6-sidebar__tags">
 						<?php foreach ( $tracking_pills as $pill ) : ?>
 						<div class="g6-sidebar__tag" data-g6-tip="<?php echo esc_attr( $pill['id'] ); ?>">
@@ -435,12 +437,10 @@ function g6_render_dashboard(): void {
 						</div>
 						<?php endforeach; ?>
 					</div>
-					<?php else : ?>
-					<p class="g6-sidebar__empty">No tracking tags active</p>
-					<?php endif; ?>
 				</div>
 			</div>
 		</aside>
+		<?php endif; ?>
 
 		<!-- Main -->
 		<div class="g6-dashboard__main">

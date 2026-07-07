@@ -18,6 +18,7 @@ function g6_tracking_head_scripts(): void {
 	$tracking = $cfg['tracking'] ?? [];
 
 	$gtm_id            = trim( $tracking['gtm_id']            ?? '' );
+	$ga_id             = trim( $tracking['ga_measurement_id'] ?? '' );
 	$google_ads_id     = trim( $tracking['google_ads_id']     ?? '' );
 	$facebook_pixel_id = trim( $tracking['facebook_pixel_id'] ?? '' );
 	$x_pixel_id        = trim( $tracking['x_pixel_id']        ?? '' );
@@ -27,6 +28,13 @@ function g6_tracking_head_scripts(): void {
 <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','<?php echo esc_js( $gtm_id ); ?>');</script>
 <!-- End Google Tag Manager -->
+	<?php endif;
+
+	if ( $ga_id ) : ?>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo esc_attr( $ga_id ); ?>"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','<?php echo esc_js( $ga_id ); ?>');</script>
+<!-- End Google Analytics 4 -->
 	<?php endif;
 
 	if ( $google_ads_id ) : ?>
