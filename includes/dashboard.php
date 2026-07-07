@@ -130,17 +130,19 @@ function g6_get_dashboard_css(): string {
 		display: flex; align-items: center; justify-content: space-between;
 		gap: 24px; flex-wrap: wrap;
 	}
-	.g6-dashboard__header-left { display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 280px; }
+	.g6-dashboard__header-left { display: flex; flex-direction: column; gap: 16px; flex: 1; min-width: 0; }
 	.g6-dashboard__logo-link { display: inline-flex; align-items: center; text-decoration: none; opacity: 0.9; transition: opacity 0.2s ease; }
 	.g6-dashboard__logo-link:hover { opacity: 1; }
 	.g6-dashboard__welcome { font-family: var(--g6-font-heading); font-size: 28px; font-weight: 600; color: #fff; margin: 0 0 6px; line-height: 1.2; }
 	.g6-dashboard__subtitle { font-size: 15px; color: rgba(255,255,255,0.75); margin: 0; }
-	.g6-dashboard__header-meta { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+	.g6-dashboard__header-meta { display: flex; align-items: center; gap: 16px; flex-shrink: 1; min-width: 0; }
 	.g6-dashboard__rep-card {
 		background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
 		border-radius: var(--g6-radius); padding: 14px 20px;
 		display: flex; align-items: center; gap: 14px; color: #fff; backdrop-filter: blur(10px);
+		min-width: 0; overflow: hidden;
 	}
+	.g6-dashboard__rep-card > div:last-child { min-width: 0; overflow: hidden; }
 	.g6-dashboard__rep-avatar {
 		width: 44px; height: 44px; border-radius: 50%; background: var(--g6-primary);
 		display: flex; align-items: center; justify-content: center;
@@ -148,9 +150,9 @@ function g6_get_dashboard_css(): string {
 		flex-shrink: 0; overflow: hidden;
 	}
 	.g6-dashboard__rep-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-	.g6-dashboard__rep-name { font-family: var(--g6-font-heading); font-size: 14px; font-weight: 600; margin: 0 0 2px; }
-	.g6-dashboard__rep-role { font-size: 12px; opacity: 0.7; margin: 0; }
-	.g6-dashboard__rep-contact { font-size: 12px; opacity: 0.85; margin: 2px 0 0; }
+	.g6-dashboard__rep-name { font-family: var(--g6-font-heading); font-size: 14px; font-weight: 600; margin: 0 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.g6-dashboard__rep-role { font-size: 12px; opacity: 0.7; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.g6-dashboard__rep-contact { font-size: 12px; opacity: 0.85; margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 	.g6-dashboard__rep-contact a { color: var(--g6-accent-blue); text-decoration: none; }
 	.g6-dashboard__rep-contact a:hover { text-decoration: underline; }
 
@@ -162,9 +164,8 @@ function g6_get_dashboard_css(): string {
 	.g6-dashboard__updated { font-size: 12px; color: var(--g6-neutral-500); }
 
 	/* ── Grid layout ── */
-	.g6-dashboard__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+	.g6-dashboard__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(450px, 100%), 1fr)); gap: 24px; margin-bottom: 24px; }
 	.g6-card--full { grid-column: 1 / -1; }
-	@media (max-width: 860px) { .g6-dashboard__grid { grid-template-columns: 1fr; } }
 
 	/* ── Card base ── */
 	.g6-card { background: #fff; border: 1px solid var(--g6-neutral-200); border-radius: var(--g6-radius-lg); padding: 28px; box-shadow: var(--g6-shadow); transition: box-shadow 0.2s ease; }
