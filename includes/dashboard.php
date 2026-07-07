@@ -164,12 +164,16 @@ function g6_get_dashboard_css(): string {
 	.g6-dashboard__updated { font-size: 12px; color: var(--g6-neutral-500); }
 
 	/* ── Grid layout ── */
-	.g6-dashboard__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(450px, 100%), 1fr)); gap: 24px; margin-bottom: 24px; }
+	.g6-dashboard__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(500px, 100%), 1fr)); gap: 24px; margin-bottom: 24px; }
 	.g6-card--full { grid-column: 1 / -1; }
 
 	/* ── Card base ── */
 	.g6-card { background: #fff; border: 1px solid var(--g6-neutral-200); border-radius: var(--g6-radius-lg); padding: 28px; box-shadow: var(--g6-shadow); transition: box-shadow 0.2s ease; }
 	.g6-card:hover { box-shadow: var(--g6-shadow-lg); }
+	@media (max-width: 600px) {
+		.g6-dashboard__header { padding-left: 24px; padding-right: 24px; }
+		.g6-card { padding-left: 24px; padding-right: 24px; }
+	}
 
 	/* ── Guides ── */
 	.g6-guides { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -390,7 +394,7 @@ function g6_render_dashboard(): void {
 				</a>
 				<div>
 					<h1 class="g6-dashboard__welcome">Welcome back, <?php echo esc_html( $first ); ?></h1>
-					<p class="g6-dashboard__subtitle">Your <?php echo esc_html( $cfg['client_name'] ); ?> marketing dashboard</p>
+					<p class="g6-dashboard__subtitle">Your <?php echo esc_html( $cfg['client_name'] ); ?> dashboard</p>
 				</div>
 			</div>
 			<div class="g6-dashboard__header-meta">
