@@ -609,7 +609,7 @@ function g6_settings_page_render(): void {
 				$login_on  = ! empty( $login_cfg['enabled'] );
 				?>
 
-				<!-- Enable + Layout (always visible) -->
+				<!-- Enable toggle (always visible) -->
 				<div class="g6s-grid">
 					<div class="g6s-card g6s-card--full">
 						<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
@@ -622,6 +622,15 @@ function g6_settings_page_render(): void {
 								<span class="g6w-toggle__track"></span>
 							</label>
 						</div>
+					</div>
+				</div>
+
+				<!-- Settings fields (hidden when customizer is disabled) -->
+				<div id="g6-login-fields" <?php if ( ! $login_on ) echo 'style="display:none"'; ?>>
+				<div class="g6s-grid" style="padding-top:0;">
+
+					<!-- Layout -->
+					<div class="g6s-card g6s-card--full">
 						<div>
 							<p class="g6s-field__label" style="margin:0 0 12px;">Layout</p>
 							<div class="g6l-layout-picker">
@@ -643,11 +652,6 @@ function g6_settings_page_render(): void {
 							</div>
 						</div>
 					</div>
-				</div>
-
-				<!-- Settings fields (hidden when customizer is disabled) -->
-				<div id="g6-login-fields" <?php if ( ! $login_on ) echo 'style="display:none"'; ?>>
-				<div class="g6s-grid" style="padding-top:0;">
 
 					<!-- Logo -->
 					<div class="g6s-card">
