@@ -576,7 +576,7 @@ class G6_Asset_Manager {
 			.tam-dropzone .dashicons { font-size: 48px; width: 48px; height: 48px; color: #999; }
 			#tam-file-list-wrapper { margin: 1em 0; background: #f9f9f9; padding: 0.5em 1em; border: 1px solid #ddd; border-radius: 4px; }
 			.tam-upload-options { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5em; flex-wrap: wrap; gap: 1em; }
-			.tam-upload-options .button .dashicons { margin-right: 4px; vertical-align: text-top; }
+			.tam-upload-options .button .dashicons { margin-right: 4px; line-height: 1 !important; vertical-align: middle !important; }
 			.tam-filters-wrapper { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1em; padding: 5px 0; width: 100%; }
 			.tam-filters-wrapper .actions { display: flex; gap: 0.5em; align-items: center; }
 			.tam-responsive-table { margin-top: 1em; }

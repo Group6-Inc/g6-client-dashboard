@@ -182,8 +182,21 @@ function g6_default_config(): array {
 			'clarity_project_id'=> '',
 		],
 
+		// Login screen customizer.
+		'login' => [
+			'enabled'        => true,
+			'layout'         => 'split-screen',
+			'logo_url'       => '/wp-content/uploads/2024/11/g6-icon.svg',
+			'logo_height'    => 65,
+			'bg_color'       => '#111111',
+			'hero_image_url' => 'https://group6inc.com/wp-content/uploads/2024/07/project-hero-rr-d.jpg',
+			'accent_color'   => '#ff6e61',
+			'link_color'     => '#ffffff',
+		],
+
 		// Developer tools.
-		'asset_manager_enabled' => false,
+		'asset_manager_enabled'    => false,
+		'disable_attachment_slugs' => false,
 
 		// Update channel.
 		'beta_updates_enabled'  => false,

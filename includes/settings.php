@@ -168,8 +168,22 @@ function g6_settings_handle_save( array &$config ): void {
 		'clarity_project_id'=> sanitize_text_field( $_POST['clarity_project_id'] ?? '' ),
 	];
 
+	// ── Login tab ─────────────────────────────────────────────────────────────
+	$_ld = g6_default_config()['login'];
+	$config['login'] = [
+		'enabled'        => isset( $_POST['login_enabled'] ),
+		'layout'         => sanitize_text_field( $_POST['login_layout']        ?? $_ld['layout'] ),
+		'logo_url'       => esc_url_raw( $_POST['login_logo_url']              ?? '' ),
+		'logo_height'    => absint( $_POST['login_logo_height']                ?? $_ld['logo_height'] ),
+		'bg_color'       => sanitize_text_field( $_POST['login_bg_color']      ?? '' ) ?: $_ld['bg_color'],
+		'hero_image_url' => esc_url_raw( $_POST['login_hero_image_url']        ?? '' ),
+		'accent_color'   => sanitize_text_field( $_POST['login_accent_color']  ?? '' ) ?: $_ld['accent_color'],
+		'link_color'     => sanitize_text_field( $_POST['login_link_color']    ?? '' ) ?: $_ld['link_color'],
+	];
+
 	// ── Developer Tools tab ───────────────────────────────────────────────────
-	$config['asset_manager_enabled'] = isset( $_POST['asset_manager_enabled'] );
+	$config['asset_manager_enabled']    = isset( $_POST['asset_manager_enabled'] );
+	$config['disable_attachment_slugs'] = isset( $_POST['disable_attachment_slugs'] );
 
 	// ── Plugin tab ────────────────────────────────────────────────────────────
 	$config['beta_updates_enabled'] = isset( $_POST['beta_updates_enabled'] );
@@ -205,6 +219,7 @@ function g6_settings_page_render(): void {
 		'dashboard' => 'Dashboard',
 		'content'   => 'Widgets',
 		'tracking'  => 'Tracking',
+		'login'     => 'Login',
 		'developer' => 'Developer Tools',
 		'plugin'    => 'Plugin',
 	];
@@ -582,6 +597,113 @@ function g6_settings_page_render(): void {
 			</div><!-- /tab: tracking -->
 
 			<!-- ═══════════════════════════════════════════════════════════ -->
+			<!-- TAB: LOGIN                                                   -->
+			<!-- ═══════════════════════════════════════════════════════════ -->
+			<div class="g6-tab-panel" id="g6-tab-login" style="display:none">
+
+				<?php
+				$_ld2      = g6_default_config()['login'];
+				$login_cfg = array_merge( $_ld2, $cfg['login'] ?? [] );
+				?>
+
+				<div class="g6s-grid">
+
+					<!-- Enable + Layout -->
+					<div class="g6s-card g6s-card--full">
+						<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+							<div class="g6s-card__header">
+								<h3 class="g6s-card__title">Login Screen Customizer</h3>
+								<p class="g6s-card__desc">Replaces the default WordPress login with a branded split-screen layout. If you have existing login CSS in WPCodeBox, disable or remove it to avoid duplicate styles.</p>
+							</div>
+							<label class="g6w-toggle" style="flex-shrink:0; margin-top:2px;">
+								<input type="checkbox" name="login_enabled" value="1" <?php checked( ! empty( $login_cfg['enabled'] ) ); ?>>
+								<span class="g6w-toggle__track"></span>
+							</label>
+						</div>
+						<div>
+							<p class="g6s-field__label" style="margin:0 0 12px;">Layout</p>
+							<div class="g6l-layout-picker">
+								<label class="g6l-layout-card">
+									<input type="radio" name="login_layout" value="split-screen" <?php checked( $login_cfg['layout'] ?? 'split-screen', 'split-screen' ); ?>>
+									<div class="g6l-layout-card__inner">
+										<div class="g6l-layout-card__screen">
+											<div class="g6l-mock-left">
+												<div class="g6l-mock-logo"></div>
+												<div class="g6l-mock-field"></div>
+												<div class="g6l-mock-field g6l-mock-field--short"></div>
+												<div class="g6l-mock-btn"></div>
+											</div>
+											<div class="g6l-mock-right"></div>
+										</div>
+										<div class="g6l-layout-card__name">Split Screen</div>
+									</div>
+								</label>
+							</div>
+						</div>
+					</div>
+
+					<!-- Logo -->
+					<div class="g6s-card">
+						<div class="g6s-card__header">
+							<h3 class="g6s-card__title">Logo</h3>
+						</div>
+						<div class="g6s-field">
+							<label class="g6s-field__label" for="login_logo_url">Logo URL</label>
+							<input class="g6s-field__input" type="text" id="login_logo_url" name="login_logo_url" value="<?php echo esc_attr( $login_cfg['logo_url'] ?? '' ); ?>" placeholder="/wp-content/uploads/logo.svg">
+						</div>
+						<div class="g6s-field" style="max-width:140px;">
+							<label class="g6s-field__label" for="login_logo_height">Logo Height (px)</label>
+							<input class="g6s-field__input" type="number" id="login_logo_height" name="login_logo_height" value="<?php echo absint( $login_cfg['logo_height'] ?? 65 ); ?>" min="20" max="300">
+						</div>
+					</div>
+
+					<!-- Colors -->
+					<div class="g6s-card">
+						<div class="g6s-card__header">
+							<h3 class="g6s-card__title">Colors</h3>
+						</div>
+						<div class="g6l-colors">
+							<div class="g6s-field">
+								<label class="g6s-field__label" for="login_bg_color_hex">Background</label>
+								<div class="g6l-color-input">
+									<input type="color" id="login_bg_color_swatch" class="g6l-swatch" value="<?php echo esc_attr( $login_cfg['bg_color'] ?? '#111111' ); ?>">
+									<input type="text" id="login_bg_color_hex" name="login_bg_color" class="g6l-hex" value="<?php echo esc_attr( $login_cfg['bg_color'] ?? '#111111' ); ?>" data-swatch="login_bg_color_swatch">
+								</div>
+							</div>
+							<div class="g6s-field">
+								<label class="g6s-field__label" for="login_accent_color_hex">Button</label>
+								<div class="g6l-color-input">
+									<input type="color" id="login_accent_color_swatch" class="g6l-swatch" value="<?php echo esc_attr( $login_cfg['accent_color'] ?? '#ff6e61' ); ?>">
+									<input type="text" id="login_accent_color_hex" name="login_accent_color" class="g6l-hex" value="<?php echo esc_attr( $login_cfg['accent_color'] ?? '#ff6e61' ); ?>" data-swatch="login_accent_color_swatch">
+								</div>
+							</div>
+							<div class="g6s-field">
+								<label class="g6s-field__label" for="login_link_color_hex">Links</label>
+								<div class="g6l-color-input">
+									<input type="color" id="login_link_color_swatch" class="g6l-swatch" value="<?php echo esc_attr( $login_cfg['link_color'] ?? '#ffffff' ); ?>">
+									<input type="text" id="login_link_color_hex" name="login_link_color" class="g6l-hex" value="<?php echo esc_attr( $login_cfg['link_color'] ?? '#ffffff' ); ?>" data-swatch="login_link_color_swatch">
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Hero image -->
+					<div class="g6s-card g6s-card--full">
+						<div class="g6s-card__header">
+							<h3 class="g6s-card__title">Hero Image</h3>
+							<p class="g6s-card__desc">Displayed on the right panel of the Split Screen layout.</p>
+						</div>
+						<div class="g6s-field">
+							<label class="g6s-field__label" for="login_hero_image_url">Image URL</label>
+							<input class="g6s-field__input" type="text" id="login_hero_image_url" name="login_hero_image_url" value="<?php echo esc_attr( $login_cfg['hero_image_url'] ?? '' ); ?>" placeholder="https://example.com/wp-content/uploads/hero.jpg">
+						</div>
+					</div>
+
+				</div><!-- /.g6s-grid -->
+
+			</div><!-- /tab: login -->
+
+			<!-- ═══════════════════════════════════════════════════════════ -->
 			<!-- TAB: DEVELOPER TOOLS                                        -->
 			<!-- ═══════════════════════════════════════════════════════════ -->
 			<div class="g6-tab-panel" id="g6-tab-developer" style="display:none">
@@ -603,6 +725,20 @@ function g6_settings_page_render(): void {
 									<a href="<?php echo esc_url( admin_url( 'themes.php?page=upload-theme-assets' ) ); ?>" class="button button-secondary">Open Asset Manager &rarr;</a>
 								</p>
 							<?php endif; ?>
+						</td>
+					</tr>
+				</table>
+
+				<h2 class="title">Attachment Pages</h2>
+				<table class="form-table">
+					<tr>
+						<th scope="row">Disable Attachment Pages</th>
+						<td>
+							<label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+								<input type="checkbox" name="disable_attachment_slugs" value="1" <?php checked( ! empty( $cfg['disable_attachment_slugs'] ) ); ?>>
+								Redirect attachment URLs to 404 and randomize attachment slugs
+							</label>
+							<p class="description">Prevents media attachment pages from reserving post slugs and returns 404 for any attachment URL. Equivalent to the <code>wpse237762</code> snippet — disable that snippet in WPCodeBox before enabling this.</p>
 						</td>
 					</tr>
 				</table>
@@ -835,6 +971,43 @@ function g6_settings_page_render(): void {
 		.g6w-toggle__track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
 		.g6w-toggle input:checked + .g6w-toggle__track { background: #FF6E61; }
 		.g6w-toggle input:checked + .g6w-toggle__track::after { transform: translateX(18px); }
+
+		/* ── Login tab ── */
+		.g6l-layout-picker { display: flex; gap: 14px; flex-wrap: wrap; }
+		.g6l-layout-card { cursor: pointer; }
+		.g6l-layout-card input { position: absolute; opacity: 0; pointer-events: none; }
+		.g6l-layout-card__inner {
+			border: 2px solid #e5e7eb;
+			border-radius: 10px;
+			overflow: hidden;
+			transition: border-color 0.15s ease, box-shadow 0.15s ease;
+			width: 168px;
+		}
+		.g6l-layout-card:hover .g6l-layout-card__inner { border-color: #d1d5db; }
+		.g6l-layout-card--selected .g6l-layout-card__inner,
+		.g6l-layout-card:has(input:checked) .g6l-layout-card__inner {
+			border-color: #FF6E61;
+			box-shadow: 0 0 0 3px rgba(255,110,97,0.15);
+		}
+		.g6l-layout-card__screen { height: 100px; display: flex; }
+		.g6l-layout-card__name { font-size: 12px; font-weight: 600; color: #374151; padding: 8px 12px; background: #f9fafb; border-top: 1px solid #e5e7eb; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+		.g6l-mock-left { flex: 0 0 50%; background: #1a1a1a; padding: 14px 12px; display: flex; flex-direction: column; gap: 5px; }
+		.g6l-mock-logo { width: 36px; height: 6px; background: rgba(255,255,255,0.35); border-radius: 2px; margin-bottom: 5px; }
+		.g6l-mock-field { height: 6px; background: rgba(255,255,255,0.15); border-radius: 2px; }
+		.g6l-mock-field--short { width: 60%; }
+		.g6l-mock-btn { height: 6px; background: #FF6E61; border-radius: 2px; margin-top: 3px; width: 55%; }
+		.g6l-mock-right { flex: 0 0 50%; background: linear-gradient(160deg, #6b7280 0%, #9ca3af 100%); }
+		.g6l-colors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+		@media (max-width: 900px) { .g6l-colors { grid-template-columns: 1fr; } }
+		.g6l-color-input {
+			display: flex; align-items: center; gap: 8px;
+			border: 1.5px solid #d1d5db; border-radius: 6px;
+			background: #f9fafb; padding: 0 10px 0 6px; height: 38px;
+			transition: border-color 0.15s ease;
+		}
+		.g6l-color-input:focus-within { border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
+		.g6l-swatch { width: 22px; height: 22px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: none; flex-shrink: 0; }
+		.g6l-hex { border: none; background: transparent; font-size: 13px; font-family: "SFMono-Regular", Consolas, monospace; color: #111827; outline: none; width: 100%; }
 	</style>
 
 	<script>
@@ -995,6 +1168,33 @@ function g6_settings_page_render(): void {
 			cb.addEventListener('change', function() {
 				g6SyncWidgetSettings(key, this.checked);
 			});
+		});
+	});
+
+	// ── Login tab: layout picker + color swatches ─────────────────────────
+	document.addEventListener('DOMContentLoaded', function() {
+		// Layout card visual selection
+		document.querySelectorAll('.g6l-layout-card input[type="radio"]').forEach(function(radio) {
+			function syncSelected() {
+				document.querySelectorAll('.g6l-layout-card').forEach(function(card) {
+					card.classList.remove('g6l-layout-card--selected');
+				});
+				radio.closest('.g6l-layout-card').classList.add('g6l-layout-card--selected');
+			}
+			if (radio.checked) syncSelected();
+			radio.addEventListener('change', syncSelected);
+		});
+
+		// Color swatch ↔ text sync.
+		// Only push text → swatch when the value is a valid hex (#rrggbb).
+		// CSS variables (var(--x)) and other values are passed through to CSS as-is.
+		document.querySelectorAll('.g6l-hex').forEach(function(hex) {
+			var swatch = document.getElementById(hex.dataset.swatch);
+			if (!swatch) return;
+			hex.addEventListener('input', function() {
+				if (/^#[0-9a-fA-F]{6}$/.test(this.value)) swatch.value = this.value;
+			});
+			swatch.addEventListener('input', function() { hex.value = this.value; });
 		});
 	});
 	</script>

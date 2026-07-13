@@ -56,3 +56,43 @@ add_action( 'plugins_loaded', function() {
 		new G6_Asset_Manager();
 	}
 } );
+
+// Boot the Login Screen Customizer.
+// Enabled by default on new installs; existing installs without the key also get the default (true).
+add_action( 'plugins_loaded', function() {
+	$defaults  = g6_default_config()['login'];
+	$saved     = get_option( 'g6_client_config', [] );
+	$login_cfg = array_merge( $defaults, $saved['login'] ?? [] );
+	if ( ! empty( $login_cfg['enabled'] ) ) {
+		require_once G6_DASHBOARD_DIR . 'includes/login-customizer.php';
+		new G6_Login_Customizer( $login_cfg );
+	}
+} );
+
+// Disable attachment pages (Developer Tools setting).
+// Functions use unique g6_ prefix — safe alongside WPCodeBox's wpse237762_* functions.
+if ( ! function_exists( 'g6_attachment_redirect_404' ) ) {
+	function g6_attachment_redirect_404(): void {
+		if ( is_attachment() ) {
+			global $wp_query;
+			$wp_query->set_404();
+			status_header( 404 );
+		}
+	}
+}
+if ( ! function_exists( 'g6_unique_attachment_slug' ) ) {
+	function g6_unique_attachment_slug( string $slug, int $_post_id, string $_post_status, string $post_type, int $_post_parent, string $_original_slug ): string {
+		if ( $post_type === 'attachment' ) {
+			return str_replace( '-', '', wp_generate_uuid4() );
+		}
+		return $slug;
+	}
+}
+add_action( 'plugins_loaded', function() {
+	$cfg = get_option( 'g6_client_config', [] );
+	if ( ! empty( $cfg['disable_attachment_slugs'] ) ) {
+		add_action( 'template_redirect',   'g6_attachment_redirect_404' );
+		add_filter( 'redirect_canonical',  'g6_attachment_redirect_404', 0 );
+		add_filter( 'wp_unique_post_slug', 'g6_unique_attachment_slug', 10, 6 );
+	}
+} );
