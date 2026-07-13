@@ -70,7 +70,7 @@ body.login::before {
 	background-repeat: no-repeat;
 }
 <?php endif; ?>
-#login {
+body.login #login {
 	background: <?php echo $bg_color; ?>;
 	height: 100svh;
 	display: flex;
@@ -82,6 +82,7 @@ body.login::before {
 	position: absolute;
 	left: 0; top: 0;
 	box-sizing: border-box;
+	margin: 0;
 }
 .login form {
 	border-radius: 12px;
@@ -113,7 +114,7 @@ body.login #login #wp-submit:hover {
 	margin-top: unset;
 }
 @media (max-width: 500px) {
-	#login {
+	body.login #login {
 		width: 100%;
 		min-width: 100%;
 		padding: 0 6%;
