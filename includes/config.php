@@ -186,7 +186,7 @@ function g6_default_config(): array {
 		'login' => [
 			'enabled'        => true,
 			'layout'         => 'split-screen',
-			'logo_url'       => '/wp-content/uploads/2024/11/g6-icon.svg',
+			'logo_url'       => '/wp-content/uploads/2026/01/g6-icon.svg',
 			'logo_height'    => 65,
 			'bg_color'       => '#111111',
 			'hero_image_url' => 'https://group6inc.com/wp-content/uploads/2024/07/project-hero-rr-d.jpg',
