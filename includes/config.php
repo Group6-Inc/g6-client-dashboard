@@ -190,8 +190,9 @@ function g6_default_config(): array {
 			'logo_height'    => 65,
 			'bg_color'       => '#111111',
 			'hero_image_url' => 'https://group6inc.com/wp-content/uploads/2024/07/project-hero-rr-d.jpg',
-			'accent_color'   => '#ff6e61',
-			'link_color'     => '#ffffff',
+			'accent_color'        => '#ff6e61',
+			'link_color'          => '#ffffff',
+			'login_error_message' => '',
 		],
 
 		// Developer tools.

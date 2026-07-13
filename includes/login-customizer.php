@@ -22,6 +22,13 @@ class G6_Login_Customizer {
 		$this->cfg = $cfg;
 		add_action( 'login_enqueue_scripts', [ $this, 'output_css' ] );
 		add_filter( 'login_headerurl',       [ $this, 'header_url' ] );
+		if ( ! empty( $cfg['login_error_message'] ) ) {
+			add_filter( 'login_errors', [ $this, 'custom_errors' ] );
+		}
+	}
+
+	public function custom_errors(): string {
+		return '<strong>' . esc_html( $this->cfg['login_error_message'] ) . '</strong>';
 	}
 
 	public function header_url(): string {

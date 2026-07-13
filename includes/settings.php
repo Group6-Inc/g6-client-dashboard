@@ -177,8 +177,9 @@ function g6_settings_handle_save( array &$config ): void {
 		'logo_height'    => absint( $_POST['login_logo_height']                ?? $_ld['logo_height'] ),
 		'bg_color'       => sanitize_text_field( $_POST['login_bg_color']      ?? '' ) ?: $_ld['bg_color'],
 		'hero_image_url' => esc_url_raw( $_POST['login_hero_image_url']        ?? '' ),
-		'accent_color'   => sanitize_text_field( $_POST['login_accent_color']  ?? '' ) ?: $_ld['accent_color'],
-		'link_color'     => sanitize_text_field( $_POST['login_link_color']    ?? '' ) ?: $_ld['link_color'],
+		'accent_color'        => sanitize_text_field( $_POST['login_accent_color']      ?? '' ) ?: $_ld['accent_color'],
+		'link_color'          => sanitize_text_field( $_POST['login_link_color']        ?? '' ) ?: $_ld['link_color'],
+		'login_error_message' => sanitize_text_field( $_POST['login_error_message']     ?? '' ),
 	];
 
 	// ── Developer Tools tab ───────────────────────────────────────────────────
@@ -199,6 +200,7 @@ function g6_settings_page_render(): void {
 	if ( ! current_user_can( 'manage_options' ) || ! g6_is_group6_user() ) {
 		wp_die( 'You do not have permission to access this page.' );
 	}
+	wp_enqueue_media();
 
 	$config = get_option( 'g6_client_config', [] );
 	if ( ! is_array( $config ) ) {
@@ -604,11 +606,11 @@ function g6_settings_page_render(): void {
 				<?php
 				$_ld2      = g6_default_config()['login'];
 				$login_cfg = array_merge( $_ld2, $cfg['login'] ?? [] );
+				$login_on  = ! empty( $login_cfg['enabled'] );
 				?>
 
+				<!-- Enable + Layout (always visible) -->
 				<div class="g6s-grid">
-
-					<!-- Enable + Layout -->
 					<div class="g6s-card g6s-card--full">
 						<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
 							<div class="g6s-card__header">
@@ -616,7 +618,7 @@ function g6_settings_page_render(): void {
 								<p class="g6s-card__desc">Replaces the default WordPress login with a branded split-screen layout. If you have existing login CSS in WPCodeBox, disable or remove it to avoid duplicate styles.</p>
 							</div>
 							<label class="g6w-toggle" style="flex-shrink:0; margin-top:2px;">
-								<input type="checkbox" name="login_enabled" value="1" <?php checked( ! empty( $login_cfg['enabled'] ) ); ?>>
+								<input type="checkbox" name="login_enabled" id="login_enabled" value="1" <?php checked( $login_on ); ?>>
 								<span class="g6w-toggle__track"></span>
 							</label>
 						</div>
@@ -641,6 +643,11 @@ function g6_settings_page_render(): void {
 							</div>
 						</div>
 					</div>
+				</div>
+
+				<!-- Settings fields (hidden when customizer is disabled) -->
+				<div id="g6-login-fields" <?php if ( ! $login_on ) echo 'style="display:none"'; ?>>
+				<div class="g6s-grid" style="padding-top:0;">
 
 					<!-- Logo -->
 					<div class="g6s-card">
@@ -649,7 +656,10 @@ function g6_settings_page_render(): void {
 						</div>
 						<div class="g6s-field">
 							<label class="g6s-field__label" for="login_logo_url">Logo URL</label>
-							<input class="g6s-field__input" type="text" id="login_logo_url" name="login_logo_url" value="<?php echo esc_attr( $login_cfg['logo_url'] ?? '' ); ?>" placeholder="/wp-content/uploads/logo.svg">
+							<div class="g6l-url-field">
+								<input class="g6s-field__input" type="text" id="login_logo_url" name="login_logo_url" value="<?php echo esc_attr( $login_cfg['logo_url'] ?? '' ); ?>" placeholder="/wp-content/uploads/logo.svg">
+								<button type="button" class="button g6l-media-btn" data-target="login_logo_url" data-type="image">Select</button>
+							</div>
 						</div>
 						<div class="g6s-field" style="max-width:140px;">
 							<label class="g6s-field__label" for="login_logo_height">Logo Height (px)</label>
@@ -695,11 +705,27 @@ function g6_settings_page_render(): void {
 						</div>
 						<div class="g6s-field">
 							<label class="g6s-field__label" for="login_hero_image_url">Image URL</label>
-							<input class="g6s-field__input" type="text" id="login_hero_image_url" name="login_hero_image_url" value="<?php echo esc_attr( $login_cfg['hero_image_url'] ?? '' ); ?>" placeholder="https://example.com/wp-content/uploads/hero.jpg">
+							<div class="g6l-url-field">
+								<input class="g6s-field__input" type="text" id="login_hero_image_url" name="login_hero_image_url" value="<?php echo esc_attr( $login_cfg['hero_image_url'] ?? '' ); ?>" placeholder="https://example.com/wp-content/uploads/hero.jpg">
+								<button type="button" class="button g6l-media-btn" data-target="login_hero_image_url" data-type="image">Select</button>
+							</div>
+						</div>
+					</div>
+
+					<!-- Error message -->
+					<div class="g6s-card g6s-card--full">
+						<div class="g6s-card__header">
+							<h3 class="g6s-card__title">Login Error Message</h3>
+							<p class="g6s-card__desc">Replaces WP's default error message, which reveals whether a username exists. Leave blank to keep the default.</p>
+						</div>
+						<div class="g6s-field">
+							<label class="g6s-field__label" for="login_error_message">Error Text</label>
+							<input class="g6s-field__input" type="text" id="login_error_message" name="login_error_message" value="<?php echo esc_attr( $login_cfg['login_error_message'] ?? '' ); ?>" placeholder="Those credentials don't look right.">
 						</div>
 					</div>
 
 				</div><!-- /.g6s-grid -->
+				</div><!-- /#g6-login-fields -->
 
 			</div><!-- /tab: login -->
 
@@ -1008,6 +1034,8 @@ function g6_settings_page_render(): void {
 		.g6l-color-input:focus-within { border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
 		.g6l-swatch { width: 22px; height: 22px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: none; flex-shrink: 0; }
 		.g6l-hex { border: none; background: transparent; font-size: 13px; font-family: "SFMono-Regular", Consolas, monospace; color: #111827; outline: none; width: 100%; }
+		.g6l-url-field { display: flex; gap: 8px; align-items: center; }
+		.g6l-url-field .g6s-field__input { flex: 1; }
 	</style>
 
 	<script>
@@ -1171,8 +1199,17 @@ function g6_settings_page_render(): void {
 		});
 	});
 
-	// ── Login tab: layout picker + color swatches ─────────────────────────
+	// ── Login tab: toggle, layout picker, color swatches, media picker ───
 	document.addEventListener('DOMContentLoaded', function() {
+		// Enable toggle → show/hide fields
+		var loginToggle = document.getElementById('login_enabled');
+		var loginFields = document.getElementById('g6-login-fields');
+		if (loginToggle && loginFields) {
+			loginToggle.addEventListener('change', function() {
+				loginFields.style.display = this.checked ? '' : 'none';
+			});
+		}
+
 		// Layout card visual selection
 		document.querySelectorAll('.g6l-layout-card input[type="radio"]').forEach(function(radio) {
 			function syncSelected() {
@@ -1195,6 +1232,26 @@ function g6_settings_page_render(): void {
 				if (/^#[0-9a-fA-F]{6}$/.test(this.value)) swatch.value = this.value;
 			});
 			swatch.addEventListener('input', function() { hex.value = this.value; });
+		});
+
+		// WordPress media library picker
+		document.querySelectorAll('.g6l-media-btn').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var targetId = this.dataset.target;
+				var frame    = wp.media({
+					title:    'Select Image',
+					button:   { text: 'Use this image' },
+					multiple: false,
+					library:  { type: 'image' }
+				});
+				frame.on('select', function() {
+					var attachment = frame.state().get('selection').first().toJSON();
+					var url        = attachment.url;
+					var input      = document.getElementById(targetId);
+					if (input) { input.value = url; input.dispatchEvent(new Event('input')); }
+				});
+				frame.open();
+			});
 		});
 	});
 	</script>
