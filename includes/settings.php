@@ -64,7 +64,18 @@ function g6_settings_icon_options(): array {
 // ── Save handler ──────────────────────────────────────────────────────────────
 
 function g6_settings_handle_save( array &$config ): void {
-	if ( ! isset( $_POST['g6_save_settings'] ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
+	$is_save    = isset( $_POST['g6_save_settings'] );
+	$is_refresh = isset( $_POST['g6_gmb_refresh'] );
+
+	if ( ( ! $is_save && ! $is_refresh ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
+		return;
+	}
+
+	if ( $is_refresh ) {
+		$place_id = sanitize_text_field( $config['reviews_place_id'] ?? '' );
+		if ( $place_id ) {
+			g6_gmb_clear_cache( $place_id );
+		}
 		return;
 	}
 
@@ -82,6 +93,15 @@ function g6_settings_handle_save( array &$config ): void {
 		'contact'  => isset( $_POST['widget_contact'] ),
 		'video'    => isset( $_POST['widget_video'] ),
 	];
+
+	// ── GMB integration ─────────────────────────────────────────────────────
+	$old_place_id               = $config['reviews_place_id'] ?? '';
+	$config['reviews_place_id'] = sanitize_text_field( $_POST['reviews_place_id'] ?? '' );
+	$config['reviews_api_key']  = sanitize_text_field( $_POST['reviews_api_key']  ?? '' );
+	// Clear the cache when the Place ID changes so stale data isn't shown.
+	if ( $config['reviews_place_id'] !== $old_place_id ) {
+		g6_gmb_clear_cache( $old_place_id );
+	}
 
 	// ── Content tab ──────────────────────────────────────────────────────────
 	$config['video_url']   = esc_url_raw( $_POST['video_url']    ?? '' );
@@ -432,6 +452,12 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Reviews -->
+					<?php
+					$_place_id  = $cfg['reviews_place_id'] ?? '';
+					$_api_key   = $cfg['reviews_api_key']  ?? '';
+					$_gmb_error = $_place_id ? g6_gmb_get_last_error( $_place_id ) : '';
+					$_gmb_cache = ( $_place_id && ! $_gmb_error ) ? get_transient( g6_gmb_transient_key( $_place_id ) ) : false;
+					?>
 					<div class="g6w-card<?php echo ! empty( $cfg['widgets']['reviews'] ) ? ' g6w-card--active' : ''; ?>" data-widget="reviews">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
@@ -445,6 +471,36 @@ function g6_settings_page_render(): void {
 								<input type="checkbox" name="widget_reviews" <?php checked( $cfg['widgets']['reviews'] ?? false ); ?>>
 								<span class="g6w-toggle__track"></span>
 							</label>
+						</div>
+						<div id="g6-widget-settings-reviews" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['reviews'] ) ? ' style="display:none"' : ''; ?>>
+							<div class="g6s-field">
+								<label class="g6s-field__label" for="reviews_place_id">Google Place ID</label>
+								<input class="g6s-field__input" type="text" id="reviews_place_id" name="reviews_place_id"
+									value="<?php echo esc_attr( $_place_id ); ?>"
+									placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4">
+								<p class="description" style="margin-top:6px;">Search your business in <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank">Google's Place ID finder</a>, or right-click it in Google Maps → "What's here?".</p>
+							</div>
+							<div class="g6s-field" style="margin-top:12px;">
+								<label class="g6s-field__label" for="reviews_api_key">Google Places API Key</label>
+								<input class="g6s-field__input" type="password" id="reviews_api_key" name="reviews_api_key"
+									value="<?php echo esc_attr( $_api_key ); ?>"
+									placeholder="AIza…">
+								<p class="description" style="margin-top:6px;">Restrict the key to the <strong>Places API (New)</strong> and this server's IP in <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>.</p>
+							</div>
+							<?php if ( $_place_id && $_api_key ) : ?>
+							<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
+								<button type="submit" name="g6_gmb_refresh" value="1" class="button">
+									<?php echo g6_icon( 'refresh-cw', 13 ); ?> Refresh Data
+								</button>
+								<?php if ( $_gmb_error ) : ?>
+									<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_gmb_error ); ?></span>
+								<?php elseif ( is_array( $_gmb_cache ) && isset( $_gmb_cache['fetched_at'] ) ) : ?>
+									<span class="description">Last fetched: <?php echo esc_html( $_gmb_cache['fetched_at'] ); ?></span>
+								<?php else : ?>
+									<span class="description">Not yet fetched — save to pull data.</span>
+								<?php endif; ?>
+							</div>
+							<?php endif; ?>
 						</div>
 					</div>
 

@@ -543,7 +543,12 @@ function g6_render_dashboard(): void {
 		<?php endif; ?>
 
 		<!-- Reputation Snapshot -->
-		<?php if ( $cfg['widgets']['reviews'] ?? true ) : ?>
+		<?php if ( $cfg['widgets']['reviews'] ?? true ) :
+			$reviews_data = g6_gmb_get_data(
+				$cfg['reviews_place_id'] ?? '',
+				$cfg['reviews_api_key']  ?? ''
+			) ?: $cfg['reviews'];
+		?>
 		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
@@ -553,20 +558,20 @@ function g6_render_dashboard(): void {
 				</div>
 				<div class="g6-reviews__summary">
 					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo esc_html( $cfg['reviews']['google_rating'] ); ?></div>
-						<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $cfg['reviews']['google_rating'] ) ); ?></div>
+						<div class="g6-reviews__stat-value"><?php echo esc_html( $reviews_data['google_rating'] ); ?></div>
+						<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $reviews_data['google_rating'] ) ); ?></div>
 						<div class="g6-reviews__stat-label">Google Rating</div>
 					</div>
 					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo (int) $cfg['reviews']['google_count']; ?></div>
+						<div class="g6-reviews__stat-value"><?php echo (int) $reviews_data['google_count']; ?></div>
 						<div class="g6-reviews__stat-label">Google Reviews</div>
 					</div>
 					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo (int) $cfg['reviews']['total_reviews']; ?></div>
+						<div class="g6-reviews__stat-value"><?php echo (int) $reviews_data['total_reviews']; ?></div>
 						<div class="g6-reviews__stat-label">Total Reviews</div>
 					</div>
 				</div>
-				<?php foreach ( $cfg['reviews']['recent'] as $review ) : ?>
+				<?php foreach ( $reviews_data['recent'] as $review ) : ?>
 					<div class="g6-review">
 						<div class="g6-review__header">
 							<span>

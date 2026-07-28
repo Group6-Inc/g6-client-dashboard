@@ -40,6 +40,7 @@ define( 'G6_ZENDESK_SUBDOMAIN', 'group61347' );
 require_once G6_DASHBOARD_DIR . 'includes/class-updater.php';
 require_once G6_DASHBOARD_DIR . 'includes/config.php';
 require_once G6_DASHBOARD_DIR . 'includes/icons.php';
+require_once G6_DASHBOARD_DIR . 'includes/gmb.php';
 require_once G6_DASHBOARD_DIR . 'includes/dashboard.php';
 require_once G6_DASHBOARD_DIR . 'includes/ajax.php';
 require_once G6_DASHBOARD_DIR . 'includes/settings.php';
