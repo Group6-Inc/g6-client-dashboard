@@ -206,6 +206,8 @@ function g6_get_dashboard_css(): string {
 	.g6-keywords-table__volume { color: var(--g6-neutral-500); font-size: 13px; }
 
 	/* ── Reviews ── */
+	.g6-reviews__location-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--g6-neutral-500); margin: 16px 0 8px; }
+	.g6-reviews__location-label:first-child { margin-top: 0; }
 	.g6-reviews__summary { display: flex; gap: 24px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--g6-neutral-100); }
 	.g6-reviews__stat { text-align: center; }
 	.g6-reviews__stat-value { font-family: var(--g6-font-heading); font-size: 32px; font-weight: 700; color: var(--g6-secondary); line-height: 1; }
@@ -544,10 +546,16 @@ function g6_render_dashboard(): void {
 
 		<!-- Reputation Snapshot -->
 		<?php if ( $cfg['widgets']['reviews'] ?? true ) :
-			$reviews_data = g6_gmb_get_data(
-				$cfg['reviews_place_id'] ?? '',
-				$cfg['reviews_api_key']  ?? ''
-			) ?: $cfg['reviews'];
+			$_gmb_locations    = $cfg['reviews_locations'] ?? [];
+			$_gmb_api_key      = $cfg['reviews_api_key']   ?? '';
+			$_gmb_display_mode = $cfg['reviews_display_mode'] ?? 'combined';
+
+			// Migrate legacy single place_id.
+			if ( empty( $_gmb_locations ) && ! empty( $cfg['reviews_place_id'] ) ) {
+				$_gmb_locations = [ [ 'place_id' => $cfg['reviews_place_id'], 'label' => '' ] ];
+			}
+
+			$_gmb_all = ! empty( $_gmb_locations ) ? g6_gmb_get_all_data( $_gmb_locations, $_gmb_api_key ) : [];
 		?>
 		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
@@ -556,33 +564,66 @@ function g6_render_dashboard(): void {
 						Reputation Snapshot
 					</h2>
 				</div>
-				<div class="g6-reviews__summary">
-					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo esc_html( $reviews_data['google_rating'] ); ?></div>
-						<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $reviews_data['google_rating'] ) ); ?></div>
-						<div class="g6-reviews__stat-label">Google Rating</div>
+
+				<?php if ( $_gmb_display_mode === 'separate' && count( $_gmb_all ) > 1 ) :
+					foreach ( $_gmb_all as $_loc_data ) : ?>
+					<?php if ( ! empty( $_loc_data['label'] ) ) : ?>
+					<p class="g6-reviews__location-label"><?php echo esc_html( $_loc_data['label'] ); ?></p>
+					<?php endif; ?>
+					<div class="g6-reviews__summary">
+						<div class="g6-reviews__stat">
+							<div class="g6-reviews__stat-value"><?php echo esc_html( $_loc_data['google_rating'] ); ?></div>
+							<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $_loc_data['google_rating'] ) ); ?></div>
+							<div class="g6-reviews__stat-label">Google Rating</div>
+						</div>
+						<div class="g6-reviews__stat">
+							<div class="g6-reviews__stat-value"><?php echo (int) $_loc_data['google_count']; ?></div>
+							<div class="g6-reviews__stat-label">Google Reviews</div>
+						</div>
 					</div>
-					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo (int) $reviews_data['google_count']; ?></div>
-						<div class="g6-reviews__stat-label">Google Reviews</div>
-					</div>
-					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo (int) $reviews_data['total_reviews']; ?></div>
-						<div class="g6-reviews__stat-label">Total Reviews</div>
-					</div>
-				</div>
-				<?php foreach ( $reviews_data['recent'] as $review ) : ?>
+					<?php foreach ( $_loc_data['recent'] as $_review ) : ?>
 					<div class="g6-review">
 						<div class="g6-review__header">
 							<span>
-								<span class="g6-review__stars"><?php echo str_repeat( '★', (int) $review['rating'] ); ?></span>
-								<span class="g6-review__author"><?php echo esc_html( $review['author'] ); ?></span>
+								<span class="g6-review__stars"><?php echo str_repeat( '★', (int) $_review['rating'] ); ?></span>
+								<span class="g6-review__author"><?php echo esc_html( $_review['author'] ); ?></span>
 							</span>
-							<span class="g6-review__meta"><?php echo esc_html( $review['source'] ); ?> &middot; <?php echo esc_html( $review['date'] ); ?></span>
+							<span class="g6-review__meta"><?php echo esc_html( $_review['source'] ); ?> &middot; <?php echo esc_html( $_review['date'] ); ?></span>
 						</div>
-						<p class="g6-review__text"><?php echo esc_html( $review['text'] ); ?></p>
+						<p class="g6-review__text"><?php echo esc_html( $_review['text'] ); ?></p>
+					</div>
+					<?php endforeach; ?>
+					<?php endforeach; ?>
+
+				<?php else :
+					// Combined mode (or single location): merge all data, fall back to placeholder.
+					$_reviews_data = g6_gmb_combine( $_gmb_all ) ?: $cfg['reviews'];
+				?>
+				<div class="g6-reviews__summary">
+					<div class="g6-reviews__stat">
+						<div class="g6-reviews__stat-value"><?php echo esc_html( $_reviews_data['google_rating'] ); ?></div>
+						<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $_reviews_data['google_rating'] ) ); ?></div>
+						<div class="g6-reviews__stat-label">Google Rating</div>
+					</div>
+					<div class="g6-reviews__stat">
+						<div class="g6-reviews__stat-value"><?php echo (int) $_reviews_data['google_count']; ?></div>
+						<div class="g6-reviews__stat-label">Google Reviews</div>
+					</div>
+				</div>
+				<?php foreach ( $_reviews_data['recent'] as $_review ) : ?>
+					<div class="g6-review">
+						<div class="g6-review__header">
+							<span>
+								<span class="g6-review__stars"><?php echo str_repeat( '★', (int) $_review['rating'] ); ?></span>
+								<span class="g6-review__author"><?php echo esc_html( $_review['author'] ); ?></span>
+							</span>
+							<span class="g6-review__meta"><?php echo esc_html( $_review['source'] ); ?> &middot; <?php echo esc_html( $_review['date'] ); ?></span>
+						</div>
+						<p class="g6-review__text"><?php echo esc_html( $_review['text'] ); ?></p>
 					</div>
 				<?php endforeach; ?>
+				<?php endif; ?>
+
 				<div class="g6-card__cta-footer">
 					<p class="g6-card__cta-text">Want more reviews and better reputation management?</p>
 					<a href="mailto:<?php echo esc_attr( $cfg['agency_rep_email'] ); ?>?subject=Reputation%20Management%20-%20<?php echo rawurlencode( $cfg['client_name'] ); ?>" class="g6-card__cta-link">

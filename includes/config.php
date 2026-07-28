@@ -196,8 +196,9 @@ function g6_default_config(): array {
 		],
 
 		// Google My Business integration.
-		'reviews_place_id' => '',
-		'reviews_api_key'  => '',
+		'reviews_locations'    => [],   // [ ['place_id' => '', 'label' => ''], … ]
+		'reviews_display_mode' => 'combined',
+		'reviews_api_key'      => '',
 
 		// Developer tools.
 		'asset_manager_enabled'    => false,

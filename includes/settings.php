@@ -72,10 +72,7 @@ function g6_settings_handle_save( array &$config ): void {
 	}
 
 	if ( $is_refresh ) {
-		$place_id = sanitize_text_field( $config['reviews_place_id'] ?? '' );
-		if ( $place_id ) {
-			g6_gmb_clear_cache( $place_id );
-		}
+		g6_gmb_clear_all_caches( $config['reviews_locations'] ?? [] );
 		return;
 	}
 
@@ -95,12 +92,31 @@ function g6_settings_handle_save( array &$config ): void {
 	];
 
 	// ── GMB integration ─────────────────────────────────────────────────────
-	$old_place_id               = $config['reviews_place_id'] ?? '';
-	$config['reviews_place_id'] = sanitize_text_field( $_POST['reviews_place_id'] ?? '' );
-	$config['reviews_api_key']  = sanitize_text_field( $_POST['reviews_api_key']  ?? '' );
-	// Clear the cache when the Place ID changes so stale data isn't shown.
-	if ( $config['reviews_place_id'] !== $old_place_id ) {
-		g6_gmb_clear_cache( $old_place_id );
+	$old_locations = $config['reviews_locations'] ?? [];
+
+	$loc_place_ids = $_POST['gmb_place_id'] ?? [];
+	$loc_labels    = $_POST['gmb_label']    ?? [];
+	$new_locations = [];
+	foreach ( $loc_place_ids as $i => $pid ) {
+		$pid = sanitize_text_field( $pid );
+		if ( $pid ) {
+			$new_locations[] = [
+				'place_id' => $pid,
+				'label'    => sanitize_text_field( $loc_labels[ $i ] ?? '' ),
+			];
+		}
+	}
+	$config['reviews_locations']    = $new_locations;
+	$config['reviews_display_mode'] = in_array( $_POST['reviews_display_mode'] ?? '', [ 'combined', 'separate' ], true )
+		? $_POST['reviews_display_mode'] : 'combined';
+	$config['reviews_api_key']      = sanitize_text_field( $_POST['reviews_api_key'] ?? '' );
+
+	// Clear cache for any place IDs that were removed or changed.
+	$new_ids = array_column( $new_locations, 'place_id' );
+	foreach ( $old_locations as $loc ) {
+		if ( ! in_array( $loc['place_id'], $new_ids, true ) ) {
+			g6_gmb_clear_cache( $loc['place_id'] );
+		}
 	}
 
 	// ── Content tab ──────────────────────────────────────────────────────────
@@ -453,10 +469,26 @@ function g6_settings_page_render(): void {
 
 					<!-- Reviews -->
 					<?php
-					$_place_id  = $cfg['reviews_place_id'] ?? '';
-					$_api_key   = $cfg['reviews_api_key']  ?? '';
-					$_gmb_error = $_place_id ? g6_gmb_get_last_error( $_place_id ) : '';
-					$_gmb_cache = ( $_place_id && ! $_gmb_error ) ? get_transient( g6_gmb_transient_key( $_place_id ) ) : false;
+					$_locations    = $cfg['reviews_locations'] ?? [];
+					// Migrate legacy single place_id to the new locations array.
+					if ( empty( $_locations ) && ! empty( $cfg['reviews_place_id'] ) ) {
+						$_locations = [ [ 'place_id' => $cfg['reviews_place_id'], 'label' => '' ] ];
+					}
+					$_api_key      = $cfg['reviews_api_key']      ?? '';
+					$_display_mode = $cfg['reviews_display_mode']  ?? 'combined';
+					$_has_config   = ! empty( $_locations ) && $_api_key;
+					// Collect cache status across all locations.
+					$_any_error    = '';
+					$_last_fetched = '';
+					foreach ( $_locations as $_loc ) {
+						$_pid = $_loc['place_id'] ?? '';
+						$_err = $_pid ? g6_gmb_get_last_error( $_pid ) : '';
+						if ( $_err ) { $_any_error = $_err; break; }
+						$_c = $_pid ? get_transient( g6_gmb_transient_key( $_pid ) ) : false;
+						if ( is_array( $_c ) && isset( $_c['fetched_at'] ) && $_c['fetched_at'] > $_last_fetched ) {
+							$_last_fetched = $_c['fetched_at'];
+						}
+					}
 					?>
 					<div class="g6w-card<?php echo ! empty( $cfg['widgets']['reviews'] ) ? ' g6w-card--active' : ''; ?>" data-widget="reviews">
 						<div class="g6w-card__header">
@@ -473,34 +505,62 @@ function g6_settings_page_render(): void {
 							</label>
 						</div>
 						<div id="g6-widget-settings-reviews" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['reviews'] ) ? ' style="display:none"' : ''; ?>>
-							<div class="g6s-field">
-								<label class="g6s-field__label" for="reviews_place_id">Google Place ID</label>
-								<input class="g6s-field__input" type="text" id="reviews_place_id" name="reviews_place_id"
-									value="<?php echo esc_attr( $_place_id ); ?>"
-									placeholder="ChIJN1t_tDeuEmsRUsoyG83frY4">
-								<p class="description" style="margin-top:6px;">Search your business in <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank">Google's Place ID finder</a>, or right-click it in Google Maps → "What's here?".</p>
+
+							<!-- Locations repeater -->
+							<p class="g6s-field__label" style="margin:0 0 8px;">Locations</p>
+							<div id="g6-gmb-locations">
+								<?php foreach ( $_locations as $_loc ) : ?>
+								<div class="g6-gmb-row">
+									<input class="g6s-field__input" type="text" name="gmb_place_id[]"
+										value="<?php echo esc_attr( $_loc['place_id'] ?? '' ); ?>"
+										placeholder="Place ID — e.g. ChIJN1t_tDeuEmsRUsoyG83frY4" style="flex:2;">
+									<input class="g6s-field__input" type="text" name="gmb_label[]"
+										value="<?php echo esc_attr( $_loc['label'] ?? '' ); ?>"
+										placeholder="Label (optional — e.g. Downtown)" style="flex:1;">
+									<button type="button" class="g6-remove-btn g6-gmb-remove" title="Remove">&times;</button>
+								</div>
+								<?php endforeach; ?>
 							</div>
-							<div class="g6s-field" style="margin-top:12px;">
+							<button type="button" class="button" id="g6-gmb-add" style="margin-top:8px;">+ Add Location</button>
+							<p class="description" style="margin-top:6px;">Find a Place ID at <a href="https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder" target="_blank">Google's Place ID finder</a>.</p>
+
+							<!-- Display mode -->
+							<div class="g6s-field" style="margin-top:16px;">
+								<p class="g6s-field__label" style="margin:0 0 8px;">Display mode</p>
+								<label style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+									<input type="radio" name="reviews_display_mode" value="combined" <?php checked( $_display_mode, 'combined' ); ?>>
+									<span><strong>Combined</strong> — weighted average rating, total count, newest reviews across all locations</span>
+								</label>
+								<label style="display:flex; align-items:center; gap:6px;">
+									<input type="radio" name="reviews_display_mode" value="separate" <?php checked( $_display_mode, 'separate' ); ?>>
+									<span><strong>Separate</strong> — each location shown independently with its own stats and reviews</span>
+								</label>
+							</div>
+
+							<!-- API key -->
+							<div class="g6s-field" style="margin-top:16px;">
 								<label class="g6s-field__label" for="reviews_api_key">Google Places API Key</label>
 								<input class="g6s-field__input" type="password" id="reviews_api_key" name="reviews_api_key"
-									value="<?php echo esc_attr( $_api_key ); ?>"
-									placeholder="AIza…">
-								<p class="description" style="margin-top:6px;">Restrict the key to the <strong>Places API (New)</strong> and this server's IP in <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>.</p>
+									value="<?php echo esc_attr( $_api_key ); ?>" placeholder="AIza…">
+								<p class="description" style="margin-top:6px;">Restrict the key to the <strong>Places API (New)</strong> in <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>. One key works for all locations and all client sites.</p>
 							</div>
-							<?php if ( $_place_id && $_api_key ) : ?>
+
+							<!-- Cache status + refresh -->
+							<?php if ( $_has_config ) : ?>
 							<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
 								<button type="submit" name="g6_gmb_refresh" value="1" class="button">
 									<?php echo g6_icon( 'refresh-cw', 13 ); ?> Refresh Data
 								</button>
-								<?php if ( $_gmb_error ) : ?>
-									<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_gmb_error ); ?></span>
-								<?php elseif ( is_array( $_gmb_cache ) && isset( $_gmb_cache['fetched_at'] ) ) : ?>
-									<span class="description">Last fetched: <?php echo esc_html( $_gmb_cache['fetched_at'] ); ?></span>
+								<?php if ( $_any_error ) : ?>
+									<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_any_error ); ?></span>
+								<?php elseif ( $_last_fetched ) : ?>
+									<span class="description">Last fetched: <?php echo esc_html( $_last_fetched ); ?></span>
 								<?php else : ?>
 									<span class="description">Not yet fetched — save to pull data.</span>
 								<?php endif; ?>
 							</div>
 							<?php endif; ?>
+
 						</div>
 					</div>
 
@@ -1096,6 +1156,8 @@ function g6_settings_page_render(): void {
 		.g6l-hex { border: none; background: transparent; font-size: 13px; font-family: "SFMono-Regular", Consolas, monospace; color: #111827; outline: none; width: 100%; }
 		.g6l-url-field { display: flex; gap: 8px; align-items: center; }
 		.g6l-url-field .g6s-field__input { flex: 1; }
+		.g6-gmb-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+		.g6-gmb-row .g6s-field__input { min-width: 0; }
 	</style>
 
 	<script>
@@ -1256,6 +1318,28 @@ function g6_settings_page_render(): void {
 			cb.addEventListener('change', function() {
 				g6SyncWidgetSettings(key, this.checked);
 			});
+		});
+	});
+
+	// ── GMB locations repeater ────────────────────────────────────────────
+	document.addEventListener('DOMContentLoaded', function() {
+		function g6GmbAddRow(placeId, label) {
+			var row = document.createElement('div');
+			row.className = 'g6-gmb-row';
+			row.innerHTML =
+				'<input class="g6s-field__input" type="text" name="gmb_place_id[]" value="' + (placeId || '') + '" placeholder="Place ID — e.g. ChIJN1t_tDeuEmsRUsoyG83frY4" style="flex:2;">' +
+				'<input class="g6s-field__input" type="text" name="gmb_label[]" value="' + (label || '') + '" placeholder="Label (optional — e.g. Downtown)" style="flex:1;">' +
+				'<button type="button" class="g6-remove-btn g6-gmb-remove" title="Remove">&times;</button>';
+			document.getElementById('g6-gmb-locations').appendChild(row);
+		}
+
+		var addBtn = document.getElementById('g6-gmb-add');
+		if (addBtn) addBtn.addEventListener('click', function() { g6GmbAddRow('', ''); });
+
+		document.getElementById('g6-gmb-locations').addEventListener('click', function(e) {
+			if (e.target.classList.contains('g6-gmb-remove')) {
+				e.target.closest('.g6-gmb-row').remove();
+			}
 		});
 	});
 
