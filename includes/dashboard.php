@@ -206,11 +206,27 @@ function g6_get_dashboard_css(): string {
 	.g6-keywords-table__volume { color: var(--g6-neutral-500); font-size: 13px; }
 
 	/* ── Reviews ── */
-	.g6-reviews__summary { display: flex; gap: 24px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--g6-neutral-100); }
+	.g6-reviews__location-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--g6-neutral-500); margin: 20px 0 10px; padding-top: 16px; border-top: 1px solid var(--g6-neutral-200); }
+	.g6-dashboard__section-header + .g6-reviews__location-label { margin-top: 0; padding-top: 0; border-top: none; }
+	.g6-reviews__summary { display: flex; gap: 24px; margin-bottom: 0; padding-bottom: 0; }
 	.g6-reviews__stat { text-align: center; }
 	.g6-reviews__stat-value { font-family: var(--g6-font-heading); font-size: 32px; font-weight: 700; color: var(--g6-secondary); line-height: 1; }
 	.g6-reviews__stat-label { font-size: 12px; color: var(--g6-neutral-500); margin-top: 4px; }
 	.g6-reviews__stars { color: var(--g6-accent-yellow); font-size: 14px; letter-spacing: 2px; }
+	.g6-reviews__compare-box { background: var(--g6-neutral-50); border: 1px solid var(--g6-neutral-200); border-radius: var(--g6-radius); padding: 14px 16px; margin: 20px 0; }
+	.g6-reviews__comparison-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g6-neutral-500); margin: 0 0 10px; }
+	.g6-reviews__comp-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--g6-neutral-200); }
+	.g6-reviews__comp-row:last-child { border-bottom: none; padding-bottom: 0; }
+	.g6-reviews__comp-row--client .g6-reviews__comp-name { font-weight: 600; }
+	.g6-reviews__comp-name { font-size: 13px; color: var(--g6-neutral-800); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+	a.g6-reviews__comp-name:hover { text-decoration: underline; color: var(--g6-secondary); }
+	.g6-reviews__comp-rating { font-size: 13px; color: var(--g6-neutral-700); white-space: nowrap; }
+	.g6-reviews__comp-count { font-size: 13px; color: var(--g6-neutral-500); white-space: nowrap; }
+	.g6-reviews__comp-gap { font-size: 12px; font-weight: 600; white-space: nowrap; min-width: 70px; text-align: right; }
+	.g6-reviews__comp-gap--behind { color: #d63638; }
+	.g6-reviews__comp-gap--ahead  { color: #00a32a; }
+	.g6-reviews__recent-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g6-neutral-500); margin: 20px 0 4px; padding-top: 16px; border-top: 1px solid var(--g6-neutral-100); }
+	.g6-reviews__compare-box + .g6-reviews__recent-title { border-top: none; padding-top: 0; margin-top: 4px; }
 	.g6-review { padding: 14px 0; border-bottom: 1px solid var(--g6-neutral-100); }
 	.g6-review:last-child { border-bottom: none; padding-bottom: 0; }
 	.g6-review__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
@@ -543,7 +559,40 @@ function g6_render_dashboard(): void {
 		<?php endif; ?>
 
 		<!-- Reputation Snapshot -->
-		<?php if ( $cfg['widgets']['reviews'] ?? true ) : ?>
+		<?php if ( $cfg['widgets']['reviews'] ?? true ) :
+			$_gmb_locations    = $cfg['reviews_locations']   ?? [];
+			$_gmb_competitors  = $cfg['reviews_competitors'] ?? [];
+			$_gmb_api_key      = $cfg['reviews_api_key']     ?? '';
+			$_gmb_display_mode = $cfg['reviews_display_mode'] ?? 'combined';
+			$_gmb_cta_text     = $cfg['reviews_cta_text']    ?? '';
+
+			// Migrate legacy single place_id.
+			if ( empty( $_gmb_locations ) && ! empty( $cfg['reviews_place_id'] ) ) {
+				$_gmb_locations = [ [ 'place_id' => $cfg['reviews_place_id'], 'label' => '' ] ];
+			}
+
+			$_gmb_all      = ! empty( $_gmb_locations )   ? g6_gmb_get_all_data( $_gmb_locations,   $_gmb_api_key ) : [];
+			$_gmb_comp_all = ! empty( $_gmb_competitors ) ? g6_gmb_get_all_data( $_gmb_competitors, $_gmb_api_key ) : [];
+			$_gmb_combined = g6_gmb_combine( $_gmb_all );
+
+			// Fallback to static config when no live data.
+			$_reviews_data  = $_gmb_combined ?: $cfg['reviews'];
+			$_client_count  = (int)   ( $_reviews_data['google_count']  ?? 0 );
+			$_client_rating = (float) ( $_reviews_data['google_rating'] ?? 0 );
+
+			// 3 most-recent reviews — always combined/sorted from all locations.
+			$_reviews_recent  = array_slice( $_reviews_data['recent'] ?? [], 0, 3 );
+			$_show_comparison = ! empty( $_gmb_comp_all );
+
+			// CTA: manual override wins; otherwise dynamic; otherwise generic.
+			if ( $_gmb_cta_text ) {
+				$_cta_body = esc_html( $_gmb_cta_text );
+			} elseif ( $_show_comparison ) {
+				$_cta_body = esc_html( g6_gmb_dynamic_cta( $_client_count, $_gmb_comp_all ) );
+			} else {
+				$_cta_body = 'Want more reviews and better reputation management?';
+			}
+		?>
 		<div class="g6-card">
 				<div class="g6-dashboard__section-header">
 					<h2 class="g6-dashboard__section-title">
@@ -551,35 +600,89 @@ function g6_render_dashboard(): void {
 						Reputation Snapshot
 					</h2>
 				</div>
+
+				<?php if ( $_gmb_display_mode === 'separate' && count( $_gmb_all ) > 1 ) :
+					foreach ( $_gmb_all as $_loc_data ) : ?>
+					<div class="g6-reviews__location-label"><?php echo esc_html( $_loc_data['label'] ); ?></div>
+					<div class="g6-reviews__summary">
+						<div class="g6-reviews__stat">
+							<div class="g6-reviews__stat-value"><?php echo esc_html( $_loc_data['google_rating'] ); ?></div>
+							<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $_loc_data['google_rating'] ) ); ?></div>
+							<div class="g6-reviews__stat-label">Google Rating</div>
+						</div>
+						<div class="g6-reviews__stat">
+							<div class="g6-reviews__stat-value"><?php echo (int) $_loc_data['google_count']; ?></div>
+							<div class="g6-reviews__stat-label">Google Reviews</div>
+						</div>
+					</div>
+					<?php endforeach; ?>
+				<?php else : ?>
 				<div class="g6-reviews__summary">
 					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo esc_html( $cfg['reviews']['google_rating'] ); ?></div>
-						<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $cfg['reviews']['google_rating'] ) ); ?></div>
+						<div class="g6-reviews__stat-value"><?php echo esc_html( $_reviews_data['google_rating'] ); ?></div>
+						<div class="g6-reviews__stars"><?php echo str_repeat( '★', (int) round( $_reviews_data['google_rating'] ) ); ?></div>
 						<div class="g6-reviews__stat-label">Google Rating</div>
 					</div>
 					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo (int) $cfg['reviews']['google_count']; ?></div>
+						<div class="g6-reviews__stat-value"><?php echo (int) $_reviews_data['google_count']; ?></div>
 						<div class="g6-reviews__stat-label">Google Reviews</div>
 					</div>
-					<div class="g6-reviews__stat">
-						<div class="g6-reviews__stat-value"><?php echo (int) $cfg['reviews']['total_reviews']; ?></div>
-						<div class="g6-reviews__stat-label">Total Reviews</div>
+				</div>
+				<?php endif; ?>
+
+				<?php if ( $_show_comparison ) : ?>
+				<div class="g6-reviews__compare-box">
+					<div class="g6-reviews__comparison-title">How You Compare</div>
+					<div class="g6-reviews__comparison-table">
+						<div class="g6-reviews__comp-row g6-reviews__comp-row--client">
+							<span class="g6-reviews__comp-name"><?php echo esc_html( $cfg['client_name'] ); ?></span>
+							<span class="g6-reviews__comp-rating"><?php echo esc_html( number_format( $_client_rating, 1 ) ); ?> ★</span>
+							<span class="g6-reviews__comp-count"><?php echo number_format( $_client_count ); ?> reviews</span>
+							<span class="g6-reviews__comp-gap"></span>
+						</div>
+						<?php foreach ( $_gmb_comp_all as $_comp ) :
+							$_gap      = (int) ( $_comp['google_count'] ?? 0 ) - $_client_count;
+							$_maps_url = 'https://www.google.com/maps/place/?q=place_id:' . rawurlencode( $_comp['place_id'] ?? '' );
+						?>
+						<div class="g6-reviews__comp-row">
+							<a class="g6-reviews__comp-name" href="<?php echo esc_url( $_maps_url ); ?>" target="_blank" rel="noopener">
+								<?php echo esc_html( $_comp['label'] ); ?>
+							</a>
+							<span class="g6-reviews__comp-rating"><?php echo esc_html( number_format( $_comp['google_rating'] ?? 0, 1 ) ); ?> ★</span>
+							<span class="g6-reviews__comp-count"><?php echo number_format( (int) ( $_comp['google_count'] ?? 0 ) ); ?> reviews</span>
+							<span class="g6-reviews__comp-gap <?php echo $_gap > 0 ? 'g6-reviews__comp-gap--behind' : 'g6-reviews__comp-gap--ahead'; ?>">
+								<?php if ( $_gap > 0 ) : ?>
+									+<?php echo number_format( $_gap ); ?> ahead
+								<?php elseif ( $_gap < 0 ) : ?>
+									<?php echo number_format( abs( $_gap ) ); ?> behind
+								<?php else : ?>
+									tied
+								<?php endif; ?>
+							</span>
+						</div>
+						<?php endforeach; ?>
 					</div>
 				</div>
-				<?php foreach ( $cfg['reviews']['recent'] as $review ) : ?>
-					<div class="g6-review">
-						<div class="g6-review__header">
-							<span>
-								<span class="g6-review__stars"><?php echo str_repeat( '★', (int) $review['rating'] ); ?></span>
-								<span class="g6-review__author"><?php echo esc_html( $review['author'] ); ?></span>
-							</span>
-							<span class="g6-review__meta"><?php echo esc_html( $review['source'] ); ?> &middot; <?php echo esc_html( $review['date'] ); ?></span>
-						</div>
-						<p class="g6-review__text"><?php echo esc_html( $review['text'] ); ?></p>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $_reviews_recent ) ) : ?>
+				<div class="g6-reviews__recent-title">Latest Reviews</div>
+				<?php foreach ( $_reviews_recent as $_review ) : ?>
+				<div class="g6-review">
+					<div class="g6-review__header">
+						<span>
+							<span class="g6-review__stars"><?php echo str_repeat( '★', (int) $_review['rating'] ); ?></span>
+							<span class="g6-review__author"><?php echo esc_html( $_review['author'] ); ?></span>
+						</span>
+						<span class="g6-review__meta"><?php echo esc_html( $_review['source'] ); ?> &middot; <?php echo esc_html( $_review['date'] ); ?></span>
 					</div>
+					<p class="g6-review__text"><?php echo esc_html( $_review['text'] ); ?></p>
+				</div>
 				<?php endforeach; ?>
+				<?php endif; ?>
+
 				<div class="g6-card__cta-footer">
-					<p class="g6-card__cta-text">Want more reviews and better reputation management?</p>
+					<p class="g6-card__cta-text"><?php echo $_cta_body; ?></p>
 					<a href="mailto:<?php echo esc_attr( $cfg['agency_rep_email'] ); ?>?subject=Reputation%20Management%20-%20<?php echo rawurlencode( $cfg['client_name'] ); ?>" class="g6-card__cta-link">
 						Ask about Reputation Management &rarr;
 					</a>
