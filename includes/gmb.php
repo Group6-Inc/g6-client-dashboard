@@ -115,7 +115,7 @@ function g6_gmb_get_all_data( array $locations, string $api_key ): array {
 		$data = g6_gmb_get_data( $place_id, $api_key );
 		if ( $data ) {
 			// Prefer the user-supplied label; fall back to the name Google returns.
-			$data['label']    = sanitize_text_field( $loc['label'] ?? '' ) ?: $data['display_name'];
+			$data['label']    = sanitize_text_field( $loc['label'] ?? '' ) ?: ( $data['display_name'] ?? '' );
 			$data['place_id'] = $place_id;
 			$results[]        = $data;
 		}
