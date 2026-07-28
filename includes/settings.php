@@ -97,7 +97,7 @@ function g6_settings_handle_save( array &$config ): void {
 	$old_competitors  = $config['reviews_competitors'] ?? [];
 
 	// Helper: parse a place_id[]/label[] pair from POST into a locations array.
-	$parse_gmb_rows = function( string $pid_key, string $label_key ) use ( &$_POST ): array {
+	$parse_gmb_rows = function( string $pid_key, string $label_key ): array {
 		$pids   = $_POST[ $pid_key ]   ?? [];
 		$labels = $_POST[ $label_key ] ?? [];
 		$out    = [];
