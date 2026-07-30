@@ -347,10 +347,36 @@ function g6_settings_page_render(): void {
 					<p class="g6t-page-header__desc">Enable or disable widgets shown on the client dashboard. Expand each card to configure its content.</p>
 				</div>
 
-				<div class="g6s-grid">
+				<?php
+				$widget_nav_items = [
+					'guides'   => [ 'label' => 'How-To Guides & Resources', 'icon' => 'book-open' ],
+					'services' => [ 'label' => 'Grow Your Business',        'icon' => 'zap' ],
+					'keywords' => [ 'label' => 'Keyword Rankings',          'icon' => 'search' ],
+					'video'    => [ 'label' => 'Featured Video',            'icon' => 'play-circle' ],
+					'reviews'  => [ 'label' => 'Reputation Snapshot',       'icon' => 'star' ],
+					'contact'  => [ 'label' => 'Get in Touch',              'icon' => 'message-circle' ],
+				];
+				?>
+
+				<div class="g6w-layout">
+
+					<aside class="g6w-nav">
+						<?php foreach ( $widget_nav_items as $w_key => $w_item ) : ?>
+						<div class="g6w-nav__item" data-scroll="<?php echo esc_attr( $w_key ); ?>">
+							<span class="g6w-nav__icon"><?php echo g6_icon( $w_item['icon'], 16 ); ?></span>
+							<span class="g6w-nav__label"><?php echo esc_html( $w_item['label'] ); ?></span>
+							<label class="g6w-toggle">
+								<input type="checkbox" name="widget_<?php echo esc_attr( $w_key ); ?>" <?php checked( $cfg['widgets'][ $w_key ] ?? false ); ?>>
+								<span class="g6w-toggle__track"></span>
+							</label>
+						</div>
+						<?php endforeach; ?>
+					</aside>
+
+					<div class="g6w-main">
 
 					<!-- Guides -->
-					<div class="g6w-card g6w-card--full<?php echo ! empty( $cfg['widgets']['guides'] ) ? ' g6w-card--active' : ''; ?>" data-widget="guides">
+					<div class="g6w-card" data-widget="guides">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'book-open', 20 ); ?></div>
@@ -359,10 +385,6 @@ function g6_settings_page_render(): void {
 									<p class="g6w-card__desc">Guide cards linking to Loom videos, Google Docs, or any URL.</p>
 								</div>
 							</div>
-							<label class="g6w-toggle">
-								<input type="checkbox" name="widget_guides" <?php checked( $cfg['widgets']['guides'] ?? false ); ?>>
-								<span class="g6w-toggle__track"></span>
-							</label>
 						</div>
 						<div id="g6-widget-settings-guides" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['guides'] ) ? ' style="display:none"' : ''; ?>>
 							<div id="g6-guides-repeater">
@@ -387,7 +409,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Services -->
-					<div class="g6w-card g6w-card--full<?php echo ! empty( $cfg['widgets']['services'] ) ? ' g6w-card--active' : ''; ?>" data-widget="services">
+					<div class="g6w-card" data-widget="services">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'zap', 20 ); ?></div>
@@ -396,10 +418,6 @@ function g6_settings_page_render(): void {
 									<p class="g6w-card__desc">Add-on service cards with CTAs. Check "Popular" to highlight a card.</p>
 								</div>
 							</div>
-							<label class="g6w-toggle">
-								<input type="checkbox" name="widget_services" <?php checked( $cfg['widgets']['services'] ?? false ); ?>>
-								<span class="g6w-toggle__track"></span>
-							</label>
 						</div>
 						<div id="g6-widget-settings-services" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['services'] ) ? ' style="display:none"' : ''; ?>>
 							<div id="g6-services-repeater">
@@ -429,7 +447,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Keywords -->
-					<div class="g6w-card g6w-card--full<?php echo ! empty( $cfg['widgets']['keywords'] ) ? ' g6w-card--active' : ''; ?>" data-widget="keywords">
+					<div class="g6w-card" data-widget="keywords">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'search', 20 ); ?></div>
@@ -438,10 +456,6 @@ function g6_settings_page_render(): void {
 									<p class="g6w-card__desc">Keyword position table with change and monthly volume.</p>
 								</div>
 							</div>
-							<label class="g6w-toggle">
-								<input type="checkbox" name="widget_keywords" <?php checked( $cfg['widgets']['keywords'] ?? false ); ?>>
-								<span class="g6w-toggle__track"></span>
-							</label>
 						</div>
 						<div id="g6-widget-settings-keywords" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['keywords'] ) ? ' style="display:none"' : ''; ?>>
 							<textarea name="keywords" rows="8" class="large-text code" style="width:100%; font-size:12.5px;"><?php echo esc_textarea( $kw_lines ); ?></textarea>
@@ -450,7 +464,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Video -->
-					<div class="g6w-card<?php echo ! empty( $cfg['widgets']['video'] ) ? ' g6w-card--active' : ''; ?>" data-widget="video">
+					<div class="g6w-card" data-widget="video">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'play-circle', 20 ); ?></div>
@@ -459,10 +473,6 @@ function g6_settings_page_render(): void {
 									<p class="g6w-card__desc">YouTube or Vimeo embed with a custom title.</p>
 								</div>
 							</div>
-							<label class="g6w-toggle">
-								<input type="checkbox" name="widget_video" <?php checked( $cfg['widgets']['video'] ?? false ); ?>>
-								<span class="g6w-toggle__track"></span>
-							</label>
 						</div>
 						<div id="g6-widget-settings-video" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['video'] ) ? ' style="display:none"' : ''; ?>>
 							<div style="display:flex; flex-direction:column; gap:10px;">
@@ -503,7 +513,7 @@ function g6_settings_page_render(): void {
 						}
 					}
 					?>
-					<div class="g6w-card<?php echo ! empty( $cfg['widgets']['reviews'] ) ? ' g6w-card--active' : ''; ?>" data-widget="reviews">
+					<div class="g6w-card" data-widget="reviews">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'star', 20 ); ?></div>
@@ -512,10 +522,6 @@ function g6_settings_page_render(): void {
 									<p class="g6w-card__desc">Google rating summary, competitor comparison, and recent reviews.</p>
 								</div>
 							</div>
-							<label class="g6w-toggle">
-								<input type="checkbox" name="widget_reviews" <?php checked( $cfg['widgets']['reviews'] ?? false ); ?>>
-								<span class="g6w-toggle__track"></span>
-							</label>
 						</div>
 						<div id="g6-widget-settings-reviews" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['reviews'] ) ? ' style="display:none"' : ''; ?>>
 
@@ -603,7 +609,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Contact -->
-					<div class="g6w-card<?php echo ! empty( $cfg['widgets']['contact'] ) ? ' g6w-card--active' : ''; ?>" data-widget="contact">
+					<div class="g6w-card" data-widget="contact">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'message-circle', 20 ); ?></div>
@@ -612,14 +618,12 @@ function g6_settings_page_render(): void {
 									<p class="g6w-card__desc">Support request form linked to Zendesk.</p>
 								</div>
 							</div>
-							<label class="g6w-toggle">
-								<input type="checkbox" name="widget_contact" <?php checked( $cfg['widgets']['contact'] ?? false ); ?>>
-								<span class="g6w-toggle__track"></span>
-							</label>
 						</div>
 					</div>
 
-				</div><!-- /.g6s-grid -->
+					</div><!-- /.g6w-main -->
+
+				</div><!-- /.g6w-layout -->
 
 			</div><!-- /tab: content -->
 
@@ -1135,21 +1139,43 @@ function g6_settings_page_render(): void {
 		.g6s-field__input { width: 100%; padding: 9px 12px; border: 1.5px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #111827; background: #f9fafb; box-sizing: border-box; transition: border-color 0.15s ease, background 0.15s ease; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 		.g6s-field__input:focus { outline: none; border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3px rgba(99,102,241,0.12); }
 
+		/* ── Widgets tab: sidebar + main layout ── */
+		.g6w-layout { display: flex; align-items: flex-start; gap: 24px; padding: 16px 0 24px; }
+		.g6w-nav {
+			flex: 0 0 240px;
+			position: sticky;
+			top: 40px;
+			display: flex;
+			flex-direction: column;
+			gap: 2px;
+			background: #fff;
+			border: 1.5px solid #e5e7eb;
+			border-radius: 10px;
+			padding: 8px;
+		}
+		.g6w-nav__item { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 6px; cursor: pointer; transition: background 0.15s ease; }
+		.g6w-nav__item:hover { background: #f3f4f6; }
+		.g6w-nav__icon { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; color: #6b7280; flex-shrink: 0; }
+		.g6w-nav__label { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: #111827; line-height: 1.3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+		.g6w-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+		@media (max-width: 900px) {
+			.g6w-layout { flex-direction: column; }
+			.g6w-nav { position: static; width: 100%; flex-direction: row; flex-wrap: wrap; }
+			.g6w-nav__item { flex: 1 1 auto; }
+		}
+
 		/* ── Widget cards (Widgets tab) ── */
-		.g6w-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: border-color 0.15s ease, background 0.15s ease; }
-		.g6w-card--full { grid-column: 1 / -1; }
-		.g6w-card--active { border-color: #6ee7b7; background: #f0fdf4; }
-		.g6w-card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+		.g6w-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); scroll-margin-top: 40px; }
+		.g6w-card__header { display: flex; align-items: flex-start; gap: 12px; }
 		.g6w-card__meta { display: flex; align-items: flex-start; gap: 12px; flex: 1; }
-		.g6w-card__icon { width: 38px; height: 38px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #1E3A3F; transition: background 0.15s ease, color 0.15s ease; }
-		.g6w-card--active .g6w-card__icon { background: #dcfce7; color: #059669; }
+		.g6w-card__icon { width: 38px; height: 38px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #1E3A3F; }
 		.g6w-card__title { font-size: 14px; font-weight: 600; color: #111827; margin: 0 0 3px; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
 		.g6w-card__desc { font-size: 12px; color: #6b7280; margin: 0; line-height: 1.45; }
 		.g6w-card__settings { padding-top: 16px; margin-top: 16px; border-top: 1px solid #e5e7eb; }
-		.g6w-card--active .g6w-card__settings { border-top-color: #a7f3d0; }
 
 		/* ── Toggle switch ── */
 		.g6w-toggle { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; margin-top: 2px; }
+		.g6w-nav__item .g6w-toggle { margin-top: 0; }
 		.g6w-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
 		.g6w-toggle__track { display: block; width: 40px; height: 22px; background: #d1d5db; border-radius: 11px; transition: background 0.2s ease; position: relative; }
 		.g6w-toggle__track::after { content: ''; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; background: #fff; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
@@ -1339,14 +1365,12 @@ function g6_settings_page_render(): void {
 		});
 	});
 
-	// ── Widget toggles → card active state + settings visibility ─────────────
+	// ── Widget toggles → settings visibility ──────────────────────────────────
 	var g6WidgetSettingsKeys = ['guides', 'services', 'keywords', 'video', 'reviews', 'contact'];
 
 	function g6SyncWidgetSettings(key, enabled) {
-		var el   = document.getElementById('g6-widget-settings-' + key);
-		var card = document.querySelector('.g6w-card[data-widget="' + key + '"]');
-		if (el)   el.style.display = enabled ? '' : 'none';
-		if (card) card.classList.toggle('g6w-card--active', enabled);
+		var el = document.getElementById('g6-widget-settings-' + key);
+		if (el) el.style.display = enabled ? '' : 'none';
 	}
 
 	document.addEventListener('DOMContentLoaded', function() {
@@ -1355,6 +1379,15 @@ function g6_settings_page_render(): void {
 			if (!cb) return;
 			cb.addEventListener('change', function() {
 				g6SyncWidgetSettings(key, this.checked);
+			});
+		});
+
+		// Widget nav: click a row (not the toggle) to scroll to its card.
+		document.querySelectorAll('.g6w-nav__item').forEach(function(item) {
+			item.addEventListener('click', function(e) {
+				if (e.target.closest('.g6w-toggle')) return;
+				var card = document.querySelector('.g6w-card[data-widget="' + this.dataset.scroll + '"]');
+				if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
 		});
 	});
