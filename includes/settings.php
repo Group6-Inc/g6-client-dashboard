@@ -376,7 +376,7 @@ function g6_settings_page_render(): void {
 					<div class="g6w-main">
 
 					<!-- Guides -->
-					<div class="g6w-card" data-widget="guides">
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['guides'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="guides">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'book-open', 20 ); ?></div>
@@ -409,7 +409,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Services -->
-					<div class="g6w-card" data-widget="services">
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['services'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="services">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'zap', 20 ); ?></div>
@@ -447,7 +447,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Keywords -->
-					<div class="g6w-card" data-widget="keywords">
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['keywords'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="keywords">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'search', 20 ); ?></div>
@@ -464,7 +464,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Video -->
-					<div class="g6w-card" data-widget="video">
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['video'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="video">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'play-circle', 20 ); ?></div>
@@ -513,7 +513,7 @@ function g6_settings_page_render(): void {
 						}
 					}
 					?>
-					<div class="g6w-card" data-widget="reviews">
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['reviews'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="reviews">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'star', 20 ); ?></div>
@@ -609,7 +609,7 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Contact -->
-					<div class="g6w-card" data-widget="contact">
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['contact'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="contact">
 						<div class="g6w-card__header">
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'message-circle', 20 ); ?></div>
@@ -1165,7 +1165,8 @@ function g6_settings_page_render(): void {
 		}
 
 		/* ── Widget cards (Widgets tab) ── */
-		.g6w-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); scroll-margin-top: 40px; }
+		.g6w-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 10px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); scroll-margin-top: 40px; transition: opacity 0.15s ease; }
+		.g6w-card--disabled { opacity: 0.5; }
 		.g6w-card__header { display: flex; align-items: flex-start; gap: 12px; }
 		.g6w-card__meta { display: flex; align-items: flex-start; gap: 12px; flex: 1; }
 		.g6w-card__icon { width: 38px; height: 38px; background: #f3f4f6; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #1E3A3F; }
@@ -1369,8 +1370,10 @@ function g6_settings_page_render(): void {
 	var g6WidgetSettingsKeys = ['guides', 'services', 'keywords', 'video', 'reviews', 'contact'];
 
 	function g6SyncWidgetSettings(key, enabled) {
-		var el = document.getElementById('g6-widget-settings-' + key);
-		if (el) el.style.display = enabled ? '' : 'none';
+		var el   = document.getElementById('g6-widget-settings-' + key);
+		var card = document.querySelector('.g6w-card[data-widget="' + key + '"]');
+		if (el)   el.style.display = enabled ? '' : 'none';
+		if (card) card.classList.toggle('g6w-card--disabled', !enabled);
 	}
 
 	document.addEventListener('DOMContentLoaded', function() {
