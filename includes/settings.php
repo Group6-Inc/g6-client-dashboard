@@ -29,7 +29,7 @@ function g6_add_settings_page(): void {
 	if ( ! g6_is_group6_user() ) {
 		return;
 	}
-	add_submenu_page(
+	$hook = add_submenu_page(
 		'index.php',
 		'Group6 Dashboard Settings',
 		'G6 Dashboard',
@@ -37,6 +37,11 @@ function g6_add_settings_page(): void {
 		'g6-dashboard-settings',
 		'g6_settings_page_render'
 	);
+	add_action( 'admin_enqueue_scripts', function( string $current_hook ) use ( $hook ): void {
+		if ( $current_hook === $hook ) {
+			wp_enqueue_script( 'jquery-ui-sortable' );
+		}
+	} );
 }
 
 // ── Icon list (shared by guides + services repeaters) ─────────────────────────
@@ -390,6 +395,7 @@ function g6_settings_page_render(): void {
 							<div id="g6-guides-repeater">
 								<?php foreach ( $cfg['guides'] as $i => $guide ) : ?>
 								<div class="g6-guide-row" style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;">
+									<span class="g6-drag-handle" title="Drag to reorder"><?php echo g6_icon( 'grip-vertical', 16 ); ?></span>
 									<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
 										<input type="text" name="guide_title[]" value="<?php echo esc_attr( $guide['title'] ); ?>"       placeholder="Title"       class="regular-text" style="width:100%;">
 										<select           name="guide_icon[]"  style="width:100%;">
@@ -1001,6 +1007,12 @@ function g6_settings_page_render(): void {
 		#g6-settings-form { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 24px 8px; margin-top: 0; }
 		#g6-settings-form .g6-tab-panel { padding-top: 8px; }
 
+		/* ── Guides repeater: drag handle ──────────────────────────── */
+		.g6-drag-handle { display: flex; align-items: center; color: #9ca3af; cursor: grab; flex-shrink: 0; padding: 4px 2px; touch-action: none; }
+		.g6-drag-handle:hover { color: #6b7280; }
+		.g6-guide-row.ui-sortable-helper { box-shadow: 0 6px 16px rgba(0,0,0,0.15); cursor: grabbing; }
+		.g6-guide-row-placeholder { border: 2px dashed #d1d5db; border-radius: 4px; margin-bottom: 10px; background: #f3f4f6; }
+
 		/* ── Repeater remove button ────────────────────────────────── */
 		.g6-remove-btn {
 			flex-shrink: 0;
@@ -1312,11 +1324,14 @@ function g6_settings_page_render(): void {
 		'</select>';
 	}
 
+	var g6DragHandleSvg = '<?php echo g6_icon( 'grip-vertical', 16 ); ?>';
+
 	function g6AddGuide() {
 		var row = document.createElement('div');
 		row.className = 'g6-guide-row';
 		row.style.cssText = 'display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;';
 		row.innerHTML =
+			'<span class="g6-drag-handle" title="Drag to reorder">' + g6DragHandleSvg + '</span>' +
 			'<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">' +
 				'<input type="text" name="guide_title[]" placeholder="Title" class="regular-text" style="width:100%;">' +
 				g6BuildIconSelect('guide_icon[]') +
@@ -1328,6 +1343,19 @@ function g6_settings_page_render(): void {
 	}
 
 	function g6RemoveGuide(btn) { btn.closest('.g6-guide-row').remove(); }
+
+	// ── Guides repeater: drag to reorder (jQuery UI Sortable, bundled with WP) ──
+	document.addEventListener('DOMContentLoaded', function() {
+		if (window.jQuery && jQuery.fn.sortable) {
+			jQuery('#g6-guides-repeater').sortable({
+				handle: '.g6-drag-handle',
+				axis: 'y',
+				tolerance: 'pointer',
+				placeholder: 'g6-guide-row-placeholder',
+				forcePlaceholderSize: true
+			});
+		}
+	});
 
 	// ── Services repeater ─────────────────────────────────────────────────────
 	function g6AddService() {
