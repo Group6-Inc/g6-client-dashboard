@@ -298,6 +298,12 @@ function g6_settings_page_render(): void {
 
 		<?php if ( isset( $_POST['g6_save_settings'] ) ) : ?>
 			<div class="notice notice-success is-dismissible"><p>Settings saved.</p></div>
+			<?php
+			$_sh_raw_input = trim( $_POST['support_hours_record_id'] ?? '' );
+			if ( $_sh_raw_input && empty( $cfg['support_hours_record_id'] ) ) :
+			?>
+			<div class="notice notice-warning is-dismissible"><p>Couldn't find a valid Airtable record ID in what you pasted for Support Hours — paste a record URL (it should contain <code>rec…</code>) or the bare record ID directly.</p></div>
+			<?php endif; ?>
 		<?php endif; ?>
 
 		<nav class="nav-tab-wrapper" id="g6-tab-nav">
@@ -1341,6 +1347,21 @@ function g6_settings_page_render(): void {
 					e.preventDefault();
 					switchTab(this.dataset.tab);
 				});
+			});
+
+			// This form has multiple submit buttons (Save Settings, plus "Refresh Data"
+			// buttons for GMB/Airtable that appear earlier in the DOM). Pressing Enter
+			// inside a text field implicitly submits via the FIRST submit button in the
+			// form, not necessarily "Save Settings" — so block Enter-to-submit on plain
+			// text inputs and require an explicit click on the intended button instead.
+			document.getElementById('g6-settings-form').addEventListener('keydown', function(e) {
+				if (e.key !== 'Enter') return;
+				var el = e.target;
+				if (el.tagName !== 'INPUT') return;
+				var textLikeTypes = ['text', 'password', 'url', 'email', 'number', 'search', 'tel'];
+				if (textLikeTypes.indexOf(el.type) !== -1) {
+					e.preventDefault();
+				}
 			});
 
 			// Cross-tab validation guard: if a field on a hidden tab is invalid,
