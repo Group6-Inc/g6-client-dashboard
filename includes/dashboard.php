@@ -551,7 +551,7 @@ function g6_render_dashboard(): void {
 						<?php if ( $_sh_show_cta ) : ?>
 						<div class="g6-hours-meter__cta">
 							<div class="g6-hours-meter__cta-text"><?php echo esc_html( $_sh_cta_text ); ?></div>
-							<a href="<?php echo esc_url( $_sh_cta_url ); ?>" class="g6-hours-meter__cta-link">Purchase more by contacting Group6 &rarr;</a>
+							<a href="<?php echo esc_url( $_sh_cta_url ); ?>" class="g6-hours-meter__cta-link">Purchase more by contacting Group6</a>
 						</div>
 						<?php endif; ?>
 					<?php endif; ?>
