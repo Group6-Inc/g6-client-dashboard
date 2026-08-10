@@ -537,20 +537,20 @@ function g6_render_dashboard(): void {
 				<div class="g6-sidebar__section">
 					<p class="g6-sidebar__section-title">Support Hours</p>
 					<?php if ( empty( $_sh_data['active'] ) ) : ?>
-						<p class="g6-sidebar__empty">No active support plan</p>
+						<div class="g6-sidebar__empty">No active support plan</div>
 					<?php else : ?>
 						<div class="g6-hours-meter">
 							<div class="g6-hours-meter__track">
 								<div class="g6-hours-meter__fill g6-hours-meter__fill--<?php echo esc_attr( $_sh_level ); ?>" style="width:<?php echo esc_attr( $_sh_fill_pct ); ?>%;"></div>
 							</div>
-							<p class="g6-hours-meter__pct"><?php echo esc_html( $_sh_pct_label ); ?>% remaining</p>
+							<div class="g6-hours-meter__pct"><?php echo esc_html( $_sh_pct_label ); ?>% remaining</div>
 						</div>
-						<p class="g6-hours-meter__value">
+						<div class="g6-hours-meter__value">
 							<?php echo esc_html( $_sh_prefix ); ?><strong class="g6-hours-meter__highlight g6-hours-meter__highlight--<?php echo esc_attr( $_sh_level ); ?>"><?php echo esc_html( $_sh_highlight ); ?></strong><?php echo esc_html( $_sh_suffix ); ?>
-						</p>
+						</div>
 						<?php if ( $_sh_show_cta ) : ?>
 						<div class="g6-hours-meter__cta">
-							<p class="g6-hours-meter__cta-text"><?php echo esc_html( $_sh_cta_text ); ?></p>
+							<div class="g6-hours-meter__cta-text"><?php echo esc_html( $_sh_cta_text ); ?></div>
 							<a href="<?php echo esc_url( $_sh_cta_url ); ?>" class="g6-hours-meter__cta-link">Purchase more by contacting Group6 &rarr;</a>
 						</div>
 						<?php endif; ?>
