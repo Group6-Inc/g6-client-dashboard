@@ -169,11 +169,9 @@ function g6_settings_handle_save( array &$config ): void {
 	$svc_cta_labels = $_POST['svc_cta_label'] ?? [];
 	$svc_highlights = $_POST['svc_highlight'] ?? [];
 	$services       = [];
-	$svc_index      = 0;
 	foreach ( $svc_names as $i => $name ) {
 		$name = sanitize_text_field( $name );
 		if ( '' === $name ) {
-			$svc_index++;
 			continue;
 		}
 		$icon       = sanitize_key( $svc_icons[ $i ] ?? 'zap' );
@@ -183,9 +181,8 @@ function g6_settings_handle_save( array &$config ): void {
 			'cta_url'     => esc_url_raw( $svc_urls[ $i ] ?? '' ),
 			'cta_label'   => sanitize_text_field( $svc_cta_labels[ $i ] ?? 'Learn More' ),
 			'icon'        => in_array( $icon, $allowed_icons, true ) ? $icon : 'zap',
-			'highlight'   => isset( $svc_highlights[ $svc_index ] ),
+			'highlight'   => ( $svc_highlights[ $i ] ?? '0' ) === '1',
 		];
-		$svc_index++;
 	}
 	if ( ! empty( $services ) ) {
 		$config['services'] = $services;
@@ -394,7 +391,7 @@ function g6_settings_page_render(): void {
 						<div id="g6-widget-settings-guides" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['guides'] ) ? ' style="display:none"' : ''; ?>>
 							<div id="g6-guides-repeater">
 								<?php foreach ( $cfg['guides'] as $i => $guide ) : ?>
-								<div class="g6-guide-row" style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;">
+								<div class="g6-repeater-row g6-guide-row" style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;">
 									<span class="g6-drag-handle" title="Drag to reorder"><?php echo g6_icon( 'grip-vertical', 16 ); ?></span>
 									<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
 										<input type="text" name="guide_title[]" value="<?php echo esc_attr( $guide['title'] ); ?>"       placeholder="Title"       class="regular-text" style="width:100%;">
@@ -428,7 +425,8 @@ function g6_settings_page_render(): void {
 						<div id="g6-widget-settings-services" class="g6w-card__settings"<?php echo empty( $cfg['widgets']['services'] ) ? ' style="display:none"' : ''; ?>>
 							<div id="g6-services-repeater">
 								<?php foreach ( $cfg['services'] as $i => $svc ) : ?>
-								<div class="g6-svc-row" style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;">
+								<div class="g6-repeater-row g6-svc-row" style="display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;">
+									<span class="g6-drag-handle" title="Drag to reorder"><?php echo g6_icon( 'grip-vertical', 16 ); ?></span>
 									<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">
 										<input type="text" name="svc_name[]"      value="<?php echo esc_attr( $svc['name'] ); ?>"        placeholder="Service name"   class="regular-text" style="width:100%;">
 										<select           name="svc_icon[]"      style="width:100%;">
@@ -440,7 +438,8 @@ function g6_settings_page_render(): void {
 										<input type="url"  name="svc_url[]"       value="<?php echo esc_attr( $svc['cta_url'] ); ?>"    placeholder="https://…"       class="regular-text" style="width:100%;">
 										<input type="text" name="svc_cta_label[]" value="<?php echo esc_attr( $svc['cta_label'] ); ?>"  placeholder="CTA label (e.g. Learn More)" class="regular-text" style="width:100%;">
 										<label style="display:flex; align-items:center; gap:6px; grid-column:1/-1;">
-											<input type="checkbox" name="svc_highlight[<?php echo $i; ?>]" <?php checked( $svc['highlight'] ); ?>>
+											<input type="hidden" name="svc_highlight[]" class="g6-svc-highlight-hidden" value="<?php echo $svc['highlight'] ? '1' : '0'; ?>">
+											<input type="checkbox" class="g6-svc-highlight-checkbox" <?php checked( $svc['highlight'] ); ?>>
 											Mark as Popular
 										</label>
 									</div>
@@ -535,7 +534,8 @@ function g6_settings_page_render(): void {
 							<p class="g6s-field__label" style="margin:0 0 8px;">Your Locations</p>
 							<div id="g6-gmb-locations">
 								<?php foreach ( $_locations as $_loc ) : ?>
-								<div class="g6-gmb-row">
+								<div class="g6-repeater-row g6-gmb-row">
+									<span class="g6-drag-handle" title="Drag to reorder"><?php echo g6_icon( 'grip-vertical', 16 ); ?></span>
 									<input class="g6s-field__input" type="text" name="gmb_place_id[]"
 										value="<?php echo esc_attr( $_loc['place_id'] ?? '' ); ?>"
 										placeholder="Place ID" style="flex:2;">
@@ -552,7 +552,8 @@ function g6_settings_page_render(): void {
 							<p class="g6s-field__label" style="margin:16px 0 8px;">Competitors</p>
 							<div id="g6-gmb-competitors">
 								<?php foreach ( $_competitors as $_comp ) : ?>
-								<div class="g6-gmb-row">
+								<div class="g6-repeater-row g6-gmb-row">
+									<span class="g6-drag-handle" title="Drag to reorder"><?php echo g6_icon( 'grip-vertical', 16 ); ?></span>
 									<input class="g6s-field__input" type="text" name="gmb_comp_place_id[]"
 										value="<?php echo esc_attr( $_comp['place_id'] ?? '' ); ?>"
 										placeholder="Place ID" style="flex:2;">
@@ -1007,11 +1008,11 @@ function g6_settings_page_render(): void {
 		#g6-settings-form { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 24px 8px; margin-top: 0; }
 		#g6-settings-form .g6-tab-panel { padding-top: 8px; }
 
-		/* ── Guides repeater: drag handle ──────────────────────────── */
+		/* ── Repeaters: drag-to-reorder (guides, services, GMB rows) ── */
 		.g6-drag-handle { display: flex; align-items: center; color: #9ca3af; cursor: grab; flex-shrink: 0; padding: 4px 2px; touch-action: none; }
 		.g6-drag-handle:hover { color: #6b7280; }
-		.g6-guide-row.ui-sortable-helper { box-shadow: 0 6px 16px rgba(0,0,0,0.15); cursor: grabbing; }
-		.g6-guide-row-placeholder { border: 2px dashed #d1d5db; border-radius: 4px; margin-bottom: 10px; background: #f3f4f6; }
+		.g6-repeater-row.ui-sortable-helper { box-shadow: 0 6px 16px rgba(0,0,0,0.15); cursor: grabbing; }
+		.g6-repeater-placeholder-row { border: 2px dashed #d1d5db; border-radius: 4px; margin-bottom: 10px; background: #f3f4f6; }
 
 		/* ── Repeater remove button ────────────────────────────────── */
 		.g6-remove-btn {
@@ -1328,7 +1329,7 @@ function g6_settings_page_render(): void {
 
 	function g6AddGuide() {
 		var row = document.createElement('div');
-		row.className = 'g6-guide-row';
+		row.className = 'g6-repeater-row g6-guide-row';
 		row.style.cssText = 'display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;';
 		row.innerHTML =
 			'<span class="g6-drag-handle" title="Drag to reorder">' + g6DragHandleSvg + '</span>' +
@@ -1344,26 +1345,21 @@ function g6_settings_page_render(): void {
 
 	function g6RemoveGuide(btn) { btn.closest('.g6-guide-row').remove(); }
 
-	// ── Guides repeater: drag to reorder (jQuery UI Sortable, bundled with WP) ──
-	document.addEventListener('DOMContentLoaded', function() {
-		if (window.jQuery && jQuery.fn.sortable) {
-			jQuery('#g6-guides-repeater').sortable({
-				handle: '.g6-drag-handle',
-				axis: 'y',
-				tolerance: 'pointer',
-				placeholder: 'g6-guide-row-placeholder',
-				forcePlaceholderSize: true
-			});
-		}
-	});
-
 	// ── Services repeater ─────────────────────────────────────────────────────
+	function g6BindHighlightCheckbox(cb) {
+		if (!cb) return;
+		var hidden = cb.closest('.g6-svc-row').querySelector('.g6-svc-highlight-hidden');
+		cb.addEventListener('change', function() {
+			hidden.value = this.checked ? '1' : '0';
+		});
+	}
+
 	function g6AddService() {
-		var idx = document.querySelectorAll('.g6-svc-row').length;
 		var row = document.createElement('div');
-		row.className = 'g6-svc-row';
+		row.className = 'g6-repeater-row g6-svc-row';
 		row.style.cssText = 'display:flex; gap:8px; align-items:flex-start; margin-bottom:10px; background:#f9f9f9; border:1px solid #ddd; border-radius:4px; padding:10px;';
 		row.innerHTML =
+			'<span class="g6-drag-handle" title="Drag to reorder">' + g6DragHandleSvg + '</span>' +
 			'<div style="flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px;">' +
 				'<input type="text" name="svc_name[]"      placeholder="Service name"   class="regular-text" style="width:100%;">' +
 				g6BuildIconSelect('svc_icon[]') +
@@ -1371,14 +1367,37 @@ function g6_settings_page_render(): void {
 				'<input type="url"  name="svc_url[]"       placeholder="https://…" class="regular-text" style="width:100%;">' +
 				'<input type="text" name="svc_cta_label[]" placeholder="Learn More"     class="regular-text" style="width:100%;">' +
 				'<label style="display:flex; align-items:center; gap:6px; grid-column:1/-1;">' +
-					'<input type="checkbox" name="svc_highlight[' + idx + ']"> Mark as Popular' +
+					'<input type="hidden" name="svc_highlight[]" class="g6-svc-highlight-hidden" value="0">' +
+					'<input type="checkbox" class="g6-svc-highlight-checkbox"> Mark as Popular' +
 				'</label>' +
 			'</div>' +
 			'<button type="button" onclick="g6RemoveService(this)" class="g6-remove-btn" title="Remove">&times;</button>';
 		document.getElementById('g6-services-repeater').appendChild(row);
+		g6BindHighlightCheckbox(row.querySelector('.g6-svc-highlight-checkbox'));
 	}
 
 	function g6RemoveService(btn) { btn.closest('.g6-svc-row').remove(); }
+
+	document.addEventListener('DOMContentLoaded', function() {
+		document.querySelectorAll('.g6-svc-highlight-checkbox').forEach(g6BindHighlightCheckbox);
+	});
+
+	// ── Drag-to-reorder for all repeaters (jQuery UI Sortable, bundled with WP) ──
+	document.addEventListener('DOMContentLoaded', function() {
+		if (window.jQuery && jQuery.fn.sortable) {
+			['g6-guides-repeater', 'g6-services-repeater', 'g6-gmb-locations', 'g6-gmb-competitors'].forEach(function(id) {
+				var el = document.getElementById(id);
+				if (!el) return;
+				jQuery(el).sortable({
+					handle: '.g6-drag-handle',
+					axis: 'y',
+					tolerance: 'pointer',
+					placeholder: 'g6-repeater-placeholder-row',
+					forcePlaceholderSize: true
+				});
+			});
+		}
+	});
 
 	// ── Tracking card live status ─────────────────────────────────────────────
 	document.addEventListener('DOMContentLoaded', function() {
@@ -1427,8 +1446,9 @@ function g6_settings_page_render(): void {
 	document.addEventListener('DOMContentLoaded', function() {
 		function g6GmbAddRow(containerId, pidName, labelName) {
 			var row = document.createElement('div');
-			row.className = 'g6-gmb-row';
+			row.className = 'g6-repeater-row g6-gmb-row';
 			row.innerHTML =
+				'<span class="g6-drag-handle" title="Drag to reorder">' + g6DragHandleSvg + '</span>' +
 				'<input class="g6s-field__input" type="text" name="' + pidName + '" value="" placeholder="Place ID" style="flex:2;">' +
 				'<input class="g6s-field__input" type="text" name="' + labelName + '" value="" placeholder="Label (optional)" style="flex:1;">' +
 				'<button type="button" class="g6-remove-btn g6-gmb-remove" title="Remove">&times;</button>';
