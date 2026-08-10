@@ -69,10 +69,11 @@ function g6_settings_icon_options(): array {
 // ── Save handler ──────────────────────────────────────────────────────────────
 
 function g6_settings_handle_save( array &$config ): void {
-	$is_save    = isset( $_POST['g6_save_settings'] );
-	$is_refresh = isset( $_POST['g6_gmb_refresh'] );
+	$is_save             = isset( $_POST['g6_save_settings'] );
+	$is_refresh          = isset( $_POST['g6_gmb_refresh'] );
+	$is_airtable_refresh = isset( $_POST['g6_airtable_refresh'] );
 
-	if ( ( ! $is_save && ! $is_refresh ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
+	if ( ( ! $is_save && ! $is_refresh && ! $is_airtable_refresh ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
 		return;
 	}
 
@@ -82,11 +83,28 @@ function g6_settings_handle_save( array &$config ): void {
 		return;
 	}
 
+	if ( $is_airtable_refresh ) {
+		g6_airtable_clear_cache( $config['support_hours_record_id'] ?? '' );
+		return;
+	}
+
 	// ── Dashboard tab ────────────────────────────────────────────────────────
 	$config['agency_rep_name']  = sanitize_text_field( $_POST['rep_name']   ?? '' );
 	$config['agency_rep_email'] = sanitize_email( $_POST['rep_email']       ?? '' );
 	$config['agency_rep_phone'] = sanitize_text_field( $_POST['rep_phone']  ?? '' );
 	$config['agency_rep_photo'] = esc_url_raw( $_POST['rep_photo']          ?? '' );
+
+	// Airtable Support Hours.
+	$old_record_id = $config['support_hours_record_id'] ?? '';
+	$new_record_id = g6_airtable_parse_record_id( $_POST['support_hours_record_id'] ?? '' );
+
+	$config['support_hours_enabled']   = isset( $_POST['support_hours_enabled'] );
+	$config['support_hours_api_key']   = sanitize_text_field( $_POST['support_hours_api_key'] ?? '' );
+	$config['support_hours_record_id'] = $new_record_id;
+
+	if ( $old_record_id && $old_record_id !== $new_record_id ) {
+		g6_airtable_clear_cache( $old_record_id );
+	}
 
 	$config['widgets'] = [
 		'guides'   => isset( $_POST['widget_guides'] ),
@@ -280,6 +298,12 @@ function g6_settings_page_render(): void {
 
 		<?php if ( isset( $_POST['g6_save_settings'] ) ) : ?>
 			<div class="notice notice-success is-dismissible"><p>Settings saved.</p></div>
+			<?php
+			$_sh_raw_input = trim( $_POST['support_hours_record_id'] ?? '' );
+			if ( $_sh_raw_input && empty( $cfg['support_hours_record_id'] ) ) :
+			?>
+			<div class="notice notice-warning is-dismissible"><p>Couldn't find a valid Airtable record ID in what you pasted for Support Hours — paste a record URL (it should contain <code>rec…</code>) or the bare record ID directly.</p></div>
+			<?php endif; ?>
 		<?php endif; ?>
 
 		<nav class="nav-tab-wrapper" id="g6-tab-nav">
@@ -300,7 +324,7 @@ function g6_settings_page_render(): void {
 			<div class="g6-tab-panel" id="g6-tab-dashboard">
 
 				<div class="g6t-page-header">
-					<p class="g6t-page-header__desc">Per-client configuration. More cards will appear here as integrations are added (e.g. Airtable, support hours).</p>
+					<p class="g6t-page-header__desc">Per-client configuration. More cards will appear here as integrations are added.</p>
 				</div>
 
 				<div class="g6s-grid">
@@ -332,6 +356,61 @@ function g6_settings_page_render(): void {
 						<div style="display:flex; align-items:center; gap:10px; padding-top:12px; border-top:1px solid #f3f4f6;">
 							<img src="<?php echo esc_url( $cfg['agency_rep_photo'] ); ?>" style="width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;" alt="">
 							<span style="font-size:12px; color:#6b7280;"><?php echo esc_html( $cfg['agency_rep_name'] ); ?></span>
+						</div>
+						<?php endif; ?>
+					</div>
+
+					<!-- Support Hours (Airtable) -->
+					<?php
+					$_sh_record_id    = $cfg['support_hours_record_id'] ?? '';
+					$_sh_api_key      = $cfg['support_hours_api_key']   ?? '';
+					$_sh_has_config   = $_sh_record_id && $_sh_api_key;
+					$_sh_error        = $_sh_record_id ? g6_airtable_get_last_error( $_sh_record_id ) : '';
+					$_sh_cached       = $_sh_record_id ? get_transient( g6_airtable_transient_key( $_sh_record_id ) ) : false;
+					$_sh_last_fetched = ( is_array( $_sh_cached ) && isset( $_sh_cached['fetched_at'] ) ) ? $_sh_cached['fetched_at'] : '';
+					?>
+					<div class="g6s-card g6s-card--full">
+						<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+							<div class="g6s-card__header">
+								<h3 class="g6s-card__title">Support Hours</h3>
+								<p class="g6s-card__desc">Shows the client's remaining support-hour balance from Airtable in the dashboard sidebar.</p>
+							</div>
+							<label class="g6w-toggle" style="flex-shrink:0; margin-top:2px;">
+								<input type="checkbox" name="support_hours_enabled" <?php checked( ! empty( $cfg['support_hours_enabled'] ) ); ?>>
+								<span class="g6w-toggle__track"></span>
+							</label>
+						</div>
+						<div class="g6s-field-row">
+							<div class="g6s-field">
+								<label class="g6s-field__label" for="support_hours_api_key">Airtable Personal Access Token</label>
+								<input class="g6s-field__input" type="password" id="support_hours_api_key" name="support_hours_api_key"
+									value="<?php echo esc_attr( $_sh_api_key ); ?>" placeholder="pat…">
+							</div>
+							<div class="g6s-field">
+								<label class="g6s-field__label" for="support_hours_record_id">Airtable Record URL or ID</label>
+								<input class="g6s-field__input" type="text" id="support_hours_record_id" name="support_hours_record_id"
+									value="<?php echo esc_attr( $_sh_record_id ); ?>" placeholder="Paste the record URL, or recXXXXXXXXXXXXXX">
+							</div>
+						</div>
+						<p class="description" style="margin-top:6px;">
+							Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
+						</p>
+						<p class="description" style="margin-top:6px;">
+							<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
+						</p>
+
+						<?php if ( $_sh_has_config ) : ?>
+						<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
+							<button type="submit" name="g6_airtable_refresh" value="1" class="button">
+								<?php echo g6_icon( 'refresh-cw', 13 ); ?> Refresh Data
+							</button>
+							<?php if ( $_sh_error ) : ?>
+								<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_sh_error ); ?></span>
+							<?php elseif ( $_sh_last_fetched ) : ?>
+								<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every 6 h</span>
+							<?php else : ?>
+								<span class="description">Not yet fetched — save to pull data.</span>
+							<?php endif; ?>
 						</div>
 						<?php endif; ?>
 					</div>
@@ -1271,6 +1350,21 @@ function g6_settings_page_render(): void {
 					e.preventDefault();
 					switchTab(this.dataset.tab);
 				});
+			});
+
+			// This form has multiple submit buttons (Save Settings, plus "Refresh Data"
+			// buttons for GMB/Airtable that appear earlier in the DOM). Pressing Enter
+			// inside a text field implicitly submits via the FIRST submit button in the
+			// form, not necessarily "Save Settings" — so block Enter-to-submit on plain
+			// text inputs and require an explicit click on the intended button instead.
+			document.getElementById('g6-settings-form').addEventListener('keydown', function(e) {
+				if (e.key !== 'Enter') return;
+				var el = e.target;
+				if (el.tagName !== 'INPUT') return;
+				var textLikeTypes = ['text', 'password', 'url', 'email', 'number', 'search', 'tel'];
+				if (textLikeTypes.indexOf(el.type) !== -1) {
+					e.preventDefault();
+				}
 			});
 
 			// Cross-tab validation guard: if a field on a hidden tab is invalid,
