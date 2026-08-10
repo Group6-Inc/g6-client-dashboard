@@ -397,14 +397,40 @@ function g6_get_dashboard_css(): string {
 		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	}
 	.g6-hours-meter__value {
+		font-size: 12.5px;
+		color: rgba(255,255,255,0.65);
+		margin: 12px 0 0;
+		line-height: 1.5;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
+	.g6-hours-meter__highlight {
 		font-family: var(--g6-font-heading);
-		font-size: 19px;
 		font-weight: 700;
-		margin: 4px 0 0;
+		font-size: 15px;
 		color: #fff;
 	}
-	.g6-hours-meter__value--warning  { color: var(--g6-warning); }
-	.g6-hours-meter__value--critical { color: var(--g6-error); }
+	.g6-hours-meter__highlight--warning  { color: var(--g6-warning); }
+	.g6-hours-meter__highlight--critical { color: var(--g6-error); }
+	.g6-hours-meter__cta {
+		margin-top: 14px;
+		padding-top: 12px;
+		border-top: 1px solid rgba(255,255,255,0.08);
+	}
+	.g6-hours-meter__cta-text {
+		font-size: 12px;
+		color: rgba(255,255,255,0.55);
+		margin: 0 0 4px;
+		line-height: 1.45;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
+	.g6-hours-meter__cta-link {
+		font-family: var(--g6-font-heading);
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--g6-accent-blue);
+		text-decoration: none;
+	}
+	.g6-hours-meter__cta-link:hover { text-decoration: underline; }
 	';
 }
 
@@ -449,8 +475,20 @@ function g6_render_dashboard(): void {
 		$_sh_abs_hours  = abs( $_sh_balance );
 		$_sh_hours_text = rtrim( rtrim( number_format( $_sh_abs_hours, 2 ), '0' ), '.' );
 		if ( '' === $_sh_hours_text ) $_sh_hours_text = '0';
-		$_sh_plural = abs( $_sh_abs_hours - 1.0 ) > 0.001;
-		$_sh_label  = $_sh_hours_text . ' hour' . ( $_sh_plural ? 's' : '' ) . ( $_sh_over ? ' over' : ' left' );
+		$_sh_plural    = abs( $_sh_abs_hours - 1.0 ) > 0.001;
+		$_sh_highlight = $_sh_hours_text . ' hour' . ( $_sh_plural ? 's' : '' );
+		$_sh_prefix    = $_sh_over ? "You're " : 'You have ';
+		$_sh_suffix    = $_sh_over ? ' over' : ' left';
+
+		// CTA: only surface once hours are critically low, via email for now.
+		// TODO: swap to a self-serve purchase link once one exists.
+		$_sh_show_cta = ( 'critical' === $_sh_level );
+		if ( $_sh_show_cta ) {
+			$_sh_cta_text = $_sh_over
+				? "You've used all your support hours."
+				: "You're running out of support hours.";
+			$_sh_cta_url = 'mailto:' . $cfg['agency_rep_email'] . '?subject=' . rawurlencode( 'Purchase More Support Hours - ' . $cfg['client_name'] );
+		}
 	}
 
 	$_show_sidebar = ! empty( $tracking_pills ) || $_show_sh;
@@ -507,7 +545,15 @@ function g6_render_dashboard(): void {
 							</div>
 							<p class="g6-hours-meter__pct"><?php echo esc_html( $_sh_pct_label ); ?>% remaining</p>
 						</div>
-						<p class="g6-hours-meter__value g6-hours-meter__value--<?php echo esc_attr( $_sh_level ); ?>"><?php echo esc_html( $_sh_label ); ?></p>
+						<p class="g6-hours-meter__value">
+							<?php echo esc_html( $_sh_prefix ); ?><strong class="g6-hours-meter__highlight g6-hours-meter__highlight--<?php echo esc_attr( $_sh_level ); ?>"><?php echo esc_html( $_sh_highlight ); ?></strong><?php echo esc_html( $_sh_suffix ); ?>
+						</p>
+						<?php if ( $_sh_show_cta ) : ?>
+						<div class="g6-hours-meter__cta">
+							<p class="g6-hours-meter__cta-text"><?php echo esc_html( $_sh_cta_text ); ?></p>
+							<a href="<?php echo esc_url( $_sh_cta_url ); ?>" class="g6-hours-meter__cta-link">Purchase more by contacting Group6 &rarr;</a>
+						</div>
+						<?php endif; ?>
 					<?php endif; ?>
 				</div>
 				<?php endif; ?>
