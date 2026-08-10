@@ -383,6 +383,28 @@ function g6_get_dashboard_css(): string {
 		font-style: italic;
 		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	}
+
+	/* ── Support Hours meter ── */
+	.g6-hours-meter__track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+	.g6-hours-meter__fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+	.g6-hours-meter__fill--good     { background: var(--g6-success); }
+	.g6-hours-meter__fill--warning  { background: var(--g6-warning); }
+	.g6-hours-meter__fill--critical { background: var(--g6-error); }
+	.g6-hours-meter__pct {
+		font-size: 11px;
+		color: rgba(255,255,255,0.5);
+		margin: 6px 0 0;
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	}
+	.g6-hours-meter__value {
+		font-family: var(--g6-font-heading);
+		font-size: 19px;
+		font-weight: 700;
+		margin: 4px 0 0;
+		color: #fff;
+	}
+	.g6-hours-meter__value--warning  { color: var(--g6-warning); }
+	.g6-hours-meter__value--critical { color: var(--g6-error); }
 	';
 }
 
@@ -401,6 +423,37 @@ function g6_render_dashboard(): void {
 	if ( ! empty( $tracking['facebook_pixel_id'] ) )  $tracking_pills[] = [ 'badge' => 'META', 'label' => 'Meta Pixel',            'bg' => '#1877f2', 'color' => '#fff',     'id' => $tracking['facebook_pixel_id'] ];
 	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff',     'id' => $tracking['x_pixel_id'] ];
 	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff',     'id' => $tracking['clarity_project_id'] ];
+
+	// ── Support Hours (Airtable) ──
+	$_sh_enabled   = ! empty( $cfg['support_hours_enabled'] );
+	$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
+	$_sh_api_key   = $cfg['support_hours_api_key']   ?? '';
+	$_sh_data      = ( $_sh_enabled && $_sh_record_id && $_sh_api_key )
+		? g6_airtable_get_data( $_sh_record_id, $_sh_api_key )
+		: false;
+	$_show_sh = $_sh_enabled && is_array( $_sh_data );
+
+	if ( $_show_sh && ! empty( $_sh_data['active'] ) ) {
+		$_sh_total   = (float) $_sh_data['total_hours'];
+		$_sh_balance = (float) $_sh_data['balance_hours'];
+		$_sh_pct     = $_sh_total > 0 ? ( $_sh_balance / $_sh_total ) * 100 : 0;
+
+		$_sh_fill_pct  = $_sh_pct < 0 ? 100 : min( 100, round( $_sh_pct ) );
+		$_sh_pct_label = $_sh_pct < 0 ? 0   : min( 100, round( $_sh_pct ) );
+
+		if ( $_sh_pct <= 20 )      $_sh_level = 'critical';
+		elseif ( $_sh_pct <= 50 )  $_sh_level = 'warning';
+		else                       $_sh_level = 'good';
+
+		$_sh_over       = $_sh_balance < 0;
+		$_sh_abs_hours  = abs( $_sh_balance );
+		$_sh_hours_text = rtrim( rtrim( number_format( $_sh_abs_hours, 2 ), '0' ), '.' );
+		if ( '' === $_sh_hours_text ) $_sh_hours_text = '0';
+		$_sh_plural = abs( $_sh_abs_hours - 1.0 ) > 0.001;
+		$_sh_label  = $_sh_hours_text . ' hour' . ( $_sh_plural ? 's' : '' ) . ( $_sh_over ? ' over' : ' left' );
+	}
+
+	$_show_sidebar = ! empty( $tracking_pills ) || $_show_sh;
 	?>
 	<div class="g6-dashboard">
 
@@ -436,12 +489,30 @@ function g6_render_dashboard(): void {
 			</div>
 		</div>
 
-		<div class="g6-dashboard__body<?php echo empty( $tracking_pills ) ? ' g6-dashboard__body--no-sidebar' : ''; ?>">
+		<div class="g6-dashboard__body<?php echo empty( $_show_sidebar ) ? ' g6-dashboard__body--no-sidebar' : ''; ?>">
 
 		<!-- Sidebar -->
-		<?php if ( ! empty( $tracking_pills ) ) : ?>
+		<?php if ( $_show_sidebar ) : ?>
 		<aside class="g6-dashboard__sidebar">
 			<div class="g6-sidebar">
+				<?php if ( $_show_sh ) : ?>
+				<div class="g6-sidebar__section">
+					<p class="g6-sidebar__section-title">Support Hours</p>
+					<?php if ( empty( $_sh_data['active'] ) ) : ?>
+						<p class="g6-sidebar__empty">No active support plan</p>
+					<?php else : ?>
+						<div class="g6-hours-meter">
+							<div class="g6-hours-meter__track">
+								<div class="g6-hours-meter__fill g6-hours-meter__fill--<?php echo esc_attr( $_sh_level ); ?>" style="width:<?php echo esc_attr( $_sh_fill_pct ); ?>%;"></div>
+							</div>
+							<p class="g6-hours-meter__pct"><?php echo esc_html( $_sh_pct_label ); ?>% remaining</p>
+						</div>
+						<p class="g6-hours-meter__value g6-hours-meter__value--<?php echo esc_attr( $_sh_level ); ?>"><?php echo esc_html( $_sh_label ); ?></p>
+					<?php endif; ?>
+				</div>
+				<?php endif; ?>
+
+				<?php if ( ! empty( $tracking_pills ) ) : ?>
 				<div class="g6-sidebar__section">
 					<p class="g6-sidebar__section-title">Active Tracking</p>
 					<div class="g6-sidebar__tags">
@@ -454,6 +525,7 @@ function g6_render_dashboard(): void {
 						<?php endforeach; ?>
 					</div>
 				</div>
+				<?php endif; ?>
 			</div>
 		</aside>
 		<?php endif; ?>

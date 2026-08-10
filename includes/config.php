@@ -202,6 +202,11 @@ function g6_default_config(): array {
 		'reviews_cta_text'     => '',
 		'reviews_api_key'      => '',
 
+		// Airtable Support Hours integration (dashboard sidebar).
+		'support_hours_enabled'   => false,
+		'support_hours_api_key'   => '', // Personal Access Token
+		'support_hours_record_id' => '',
+
 		// Developer tools.
 		'asset_manager_enabled'    => false,
 		'disable_attachment_slugs' => false,
