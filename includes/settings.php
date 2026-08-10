@@ -395,6 +395,9 @@ function g6_settings_page_render(): void {
 						<p class="description" style="margin-top:6px;">
 							Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
 						</p>
+						<p class="description" style="margin-top:6px;">
+							<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
+						</p>
 
 						<?php if ( $_sh_has_config ) : ?>
 						<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
