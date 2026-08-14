@@ -1074,6 +1074,15 @@ function g6_settings_page_render(): void {
 					</tr>
 				</table>
 
+				<h2 class="title" style="margin-top:28px;">Changelog</h2>
+				<?php
+				$_updater         = $GLOBALS['g6_dashboard_updater'] ?? null;
+				$_changelog_html  = $_updater ? $_updater->get_changelog_html() : '<p>Changelog unavailable.</p>';
+				?>
+				<div class="g6-changelog-box">
+					<?php echo wp_kses_post( $_changelog_html ); ?>
+				</div>
+
 			</div><!-- /tab: plugin -->
 
 			<p class="submit" style="padding-top:0;">
@@ -1088,6 +1097,21 @@ function g6_settings_page_render(): void {
 		#g6-tab-nav { margin-top: 16px; margin-bottom: 0; }
 		#g6-settings-form { background: #fff; border: 1px solid #c3c4c7; border-top: none; padding: 0 24px 8px; margin-top: 0; }
 		#g6-settings-form .g6-tab-panel { padding-top: 8px; }
+
+		/* ── Plugin tab: changelog ─────────────────────────────────── */
+		.g6-changelog-box {
+			max-height: 420px;
+			overflow-y: auto;
+			background: #fff;
+			border: 1px solid #dcdcde;
+			border-radius: 6px;
+			padding: 4px 20px 16px;
+			margin-top: 12px;
+		}
+		.g6-changelog-box h4 { font-size: 13px; font-weight: 700; margin: 16px 0 6px; color: #111827; }
+		.g6-changelog-box h4:first-child { margin-top: 16px; }
+		.g6-changelog-box ul { margin: 0 0 0 18px; padding: 0; list-style: disc; }
+		.g6-changelog-box li { font-size: 12.5px; color: #3c434a; line-height: 1.6; margin-bottom: 4px; }
 
 		/* ── Repeaters: drag-to-reorder (guides, services, GMB rows) ── */
 		.g6-drag-handle { display: flex; align-items: center; color: #9ca3af; cursor: grab; flex-shrink: 0; padding: 4px 2px; touch-action: none; }
