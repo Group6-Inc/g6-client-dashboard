@@ -369,50 +369,52 @@ function g6_settings_page_render(): void {
 					$_sh_cached       = $_sh_record_id ? get_transient( g6_airtable_transient_key( $_sh_record_id ) ) : false;
 					$_sh_last_fetched = ( is_array( $_sh_cached ) && isset( $_sh_cached['fetched_at'] ) ) ? $_sh_cached['fetched_at'] : '';
 					?>
-					<div class="g6s-card g6s-card--full">
+					<div class="g6s-card g6s-card--full<?php echo empty( $cfg['support_hours_enabled'] ) ? ' g6w-card--disabled' : ''; ?>" id="g6-support-hours-card">
 						<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
 							<div class="g6s-card__header">
 								<h3 class="g6s-card__title">Support Hours</h3>
 								<p class="g6s-card__desc">Shows the client's remaining support-hour balance from Airtable in the dashboard sidebar.</p>
 							</div>
 							<label class="g6w-toggle" style="flex-shrink:0; margin-top:2px;">
-								<input type="checkbox" name="support_hours_enabled" <?php checked( ! empty( $cfg['support_hours_enabled'] ) ); ?>>
+								<input type="checkbox" id="support_hours_enabled" name="support_hours_enabled" <?php checked( ! empty( $cfg['support_hours_enabled'] ) ); ?>>
 								<span class="g6w-toggle__track"></span>
 							</label>
 						</div>
-						<div class="g6s-field-row">
-							<div class="g6s-field">
-								<label class="g6s-field__label" for="support_hours_api_key">Airtable Personal Access Token</label>
-								<input class="g6s-field__input" type="password" id="support_hours_api_key" name="support_hours_api_key"
-									value="<?php echo esc_attr( $_sh_api_key ); ?>" placeholder="pat…">
+						<div id="g6-support-hours-fields" class="g6w-card__settings"<?php echo empty( $cfg['support_hours_enabled'] ) ? ' style="display:none"' : ''; ?>>
+							<div class="g6s-field-row">
+								<div class="g6s-field">
+									<label class="g6s-field__label" for="support_hours_api_key">Airtable Personal Access Token</label>
+									<input class="g6s-field__input" type="password" id="support_hours_api_key" name="support_hours_api_key"
+										value="<?php echo esc_attr( $_sh_api_key ); ?>" placeholder="pat…">
+								</div>
+								<div class="g6s-field">
+									<label class="g6s-field__label" for="support_hours_record_id">Airtable Record URL or ID</label>
+									<input class="g6s-field__input" type="text" id="support_hours_record_id" name="support_hours_record_id"
+										value="<?php echo esc_attr( $_sh_record_id ); ?>" placeholder="Paste the record URL, or recXXXXXXXXXXXXXX">
+								</div>
 							</div>
-							<div class="g6s-field">
-								<label class="g6s-field__label" for="support_hours_record_id">Airtable Record URL or ID</label>
-								<input class="g6s-field__input" type="text" id="support_hours_record_id" name="support_hours_record_id"
-									value="<?php echo esc_attr( $_sh_record_id ); ?>" placeholder="Paste the record URL, or recXXXXXXXXXXXXXX">
-							</div>
-						</div>
-						<p class="description" style="margin-top:6px;">
-							Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
-						</p>
-						<p class="description" style="margin-top:6px;">
-							<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
-						</p>
+							<p class="description" style="margin-top:6px;">
+								Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
+							</p>
+							<p class="description" style="margin-top:6px;">
+								<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
+							</p>
 
-						<?php if ( $_sh_has_config ) : ?>
-						<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
-							<button type="submit" name="g6_airtable_refresh" value="1" class="button">
-								<?php echo g6_icon( 'refresh-cw', 13 ); ?> Refresh Data
-							</button>
-							<?php if ( $_sh_error ) : ?>
-								<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_sh_error ); ?></span>
-							<?php elseif ( $_sh_last_fetched ) : ?>
-								<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every 6 h</span>
-							<?php else : ?>
-								<span class="description">Not yet fetched — save to pull data.</span>
+							<?php if ( $_sh_has_config ) : ?>
+							<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
+								<button type="submit" name="g6_airtable_refresh" value="1" class="button">
+									<?php echo g6_icon( 'refresh-cw', 13 ); ?> Refresh Data
+								</button>
+								<?php if ( $_sh_error ) : ?>
+									<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_sh_error ); ?></span>
+								<?php elseif ( $_sh_last_fetched ) : ?>
+									<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every 6 h</span>
+								<?php else : ?>
+									<span class="description">Not yet fetched — save to pull data.</span>
+								<?php endif; ?>
+							</div>
 							<?php endif; ?>
 						</div>
-						<?php endif; ?>
 					</div>
 
 				</div>
@@ -1218,6 +1220,7 @@ function g6_settings_page_render(): void {
 		.g6s-card {
 			background: #fff; border: 1.5px solid #e5e7eb; border-radius: 10px;
 			padding: 20px; display: flex; flex-direction: column; gap: 16px;
+			transition: opacity 0.15s ease;
 			box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
 		}
 		.g6s-card--full { grid-column: 1 / -1; }
@@ -1534,6 +1537,17 @@ function g6_settings_page_render(): void {
 				if (card) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
 			});
 		});
+
+		// Support Hours toggle → fields visibility + card dimming.
+		var shToggle = document.getElementById('support_hours_enabled');
+		var shFields = document.getElementById('g6-support-hours-fields');
+		var shCard   = document.getElementById('g6-support-hours-card');
+		if (shToggle) {
+			shToggle.addEventListener('change', function() {
+				if (shFields) shFields.style.display = this.checked ? '' : 'none';
+				if (shCard)   shCard.classList.toggle('g6w-card--disabled', !this.checked);
+			});
+		}
 	});
 
 	// ── GMB repeaters (locations + competitors share the same logic) ─────
