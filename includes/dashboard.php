@@ -454,20 +454,17 @@ function g6_render_dashboard(): void {
 	$_show_sh = $_sh_enabled && is_array( $_sh_data );
 
 	if ( $_show_sh && ! empty( $_sh_data['active'] ) ) {
-		$_sh_total   = (float) $_sh_data['total_hours'];
 		$_sh_balance = (float) $_sh_data['balance_hours'];
-		// "Total Hours Purchased" is a cumulative lifetime counter in Airtable —
-		// it never resets when a client buys a new bucket after exhausting a
-		// previous one. That makes balance/total a misleading "% remaining"
-		// (e.g. buying a fresh 5h bucket after using a prior 5h one shows 50%,
-		// not 100%), so we intentionally don't render a percentage bar/label
-		// for it. $_sh_pct is kept only to drive the good/warning/critical
-		// color threshold below, not shown to the client as a number.
-		$_sh_pct = $_sh_total > 0 ? ( $_sh_balance / $_sh_total ) * 100 : 0;
 
-		if ( $_sh_pct <= 20 )      $_sh_level = 'critical';
-		elseif ( $_sh_pct <= 50 )  $_sh_level = 'warning';
-		else                       $_sh_level = 'good';
+		// Color threshold is based on absolute hours remaining, not a
+		// percentage of "Total Hours Purchased" — that field is a cumulative
+		// lifetime counter in Airtable that never resets when a client buys
+		// a new bucket after exhausting a previous one, so balance/total is
+		// not a meaningful ratio (e.g. a fresh 5h bucket right after using
+		// up a prior 5h one would read as "50%", not "100%").
+		if ( $_sh_balance <= 2 )      $_sh_level = 'critical';
+		elseif ( $_sh_balance <= 3 )  $_sh_level = 'warning';
+		else                          $_sh_level = 'good';
 
 		$_sh_over       = $_sh_balance < 0;
 		$_sh_abs_hours  = abs( $_sh_balance );
@@ -478,9 +475,9 @@ function g6_render_dashboard(): void {
 		$_sh_prefix    = $_sh_over ? "You're " : 'You have ';
 		$_sh_suffix    = $_sh_over ? ' over' : ' left';
 
-		// CTA: only surface once hours are critically low, via email for now.
+		// CTA: surface once hours are low (warning or critical), via email for now.
 		// TODO: swap to a self-serve purchase link once one exists.
-		$_sh_show_cta = ( 'critical' === $_sh_level );
+		$_sh_show_cta = in_array( $_sh_level, [ 'warning', 'critical' ], true );
 		if ( $_sh_show_cta ) {
 			$_sh_cta_text = $_sh_over
 				? "You've used all your support hours."
