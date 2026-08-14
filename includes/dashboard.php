@@ -385,17 +385,10 @@ function g6_get_dashboard_css(): string {
 	}
 
 	/* ── Support Hours meter ── */
-	.g6-hours-meter__track { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
-	.g6-hours-meter__fill { height: 100%; border-radius: 4px; transition: width 0.3s ease; }
-	.g6-hours-meter__fill--good     { background: var(--g6-success); }
-	.g6-hours-meter__fill--warning  { background: var(--g6-warning); }
-	.g6-hours-meter__fill--critical { background: var(--g6-error); }
-	.g6-hours-meter__pct {
-		font-size: 11px;
-		color: rgba(255,255,255,0.5);
-		margin: 6px 0 0;
-		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-	}
+	/* No percentage bar: "Total Hours Purchased" is a cumulative lifetime
+	   counter in Airtable that never resets on repurchase, so balance/total
+	   is not a meaningful "% remaining" — see the PHP-side comment in
+	   g6_render_dashboard() for the full explanation. */
 	.g6-hours-meter__value {
 		font-size: 12.5px;
 		color: rgba(255,255,255,0.65);
@@ -403,6 +396,7 @@ function g6_get_dashboard_css(): string {
 		line-height: 1.5;
 		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	}
+	.g6-hours-meter__value--first { margin-top: 6px; }
 	.g6-hours-meter__highlight {
 		font-family: var(--g6-font-heading);
 		font-weight: 700;
@@ -462,10 +456,14 @@ function g6_render_dashboard(): void {
 	if ( $_show_sh && ! empty( $_sh_data['active'] ) ) {
 		$_sh_total   = (float) $_sh_data['total_hours'];
 		$_sh_balance = (float) $_sh_data['balance_hours'];
-		$_sh_pct     = $_sh_total > 0 ? ( $_sh_balance / $_sh_total ) * 100 : 0;
-
-		$_sh_fill_pct  = $_sh_pct < 0 ? 100 : min( 100, round( $_sh_pct ) );
-		$_sh_pct_label = $_sh_pct < 0 ? 0   : min( 100, round( $_sh_pct ) );
+		// "Total Hours Purchased" is a cumulative lifetime counter in Airtable —
+		// it never resets when a client buys a new bucket after exhausting a
+		// previous one. That makes balance/total a misleading "% remaining"
+		// (e.g. buying a fresh 5h bucket after using a prior 5h one shows 50%,
+		// not 100%), so we intentionally don't render a percentage bar/label
+		// for it. $_sh_pct is kept only to drive the good/warning/critical
+		// color threshold below, not shown to the client as a number.
+		$_sh_pct = $_sh_total > 0 ? ( $_sh_balance / $_sh_total ) * 100 : 0;
 
 		if ( $_sh_pct <= 20 )      $_sh_level = 'critical';
 		elseif ( $_sh_pct <= 50 )  $_sh_level = 'warning';
@@ -539,13 +537,7 @@ function g6_render_dashboard(): void {
 					<?php if ( empty( $_sh_data['active'] ) ) : ?>
 						<div class="g6-sidebar__empty">No active support plan</div>
 					<?php else : ?>
-						<div class="g6-hours-meter">
-							<div class="g6-hours-meter__track">
-								<div class="g6-hours-meter__fill g6-hours-meter__fill--<?php echo esc_attr( $_sh_level ); ?>" style="width:<?php echo esc_attr( $_sh_fill_pct ); ?>%;"></div>
-							</div>
-							<div class="g6-hours-meter__pct"><?php echo esc_html( $_sh_pct_label ); ?>% remaining</div>
-						</div>
-						<div class="g6-hours-meter__value">
+						<div class="g6-hours-meter__value g6-hours-meter__value--first">
 							<?php echo esc_html( $_sh_prefix ); ?><strong class="g6-hours-meter__highlight g6-hours-meter__highlight--<?php echo esc_attr( $_sh_level ); ?>"><?php echo esc_html( $_sh_highlight ); ?></strong><?php echo esc_html( $_sh_suffix ); ?>
 						</div>
 						<?php if ( $_sh_show_cta ) : ?>
