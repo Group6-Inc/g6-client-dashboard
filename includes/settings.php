@@ -1156,6 +1156,7 @@ function g6_settings_page_render(): void {
 		}
 		.g6-changelog-box h4 { font-size: 13px; font-weight: 700; margin: 16px 0 6px; color: #111827; }
 		.g6-changelog-box h4:first-child { margin-top: 16px; }
+		.g6-changelog-box .g6-changelog-date { font-weight: 400; font-size: 11.5px; color: #9ca3af; margin-left: 6px; }
 		.g6-changelog-box ul { margin: 0 0 0 18px; padding: 0; list-style: disc; }
 		.g6-changelog-box li { font-size: 12.5px; color: #3c434a; line-height: 1.6; margin-bottom: 4px; }
 
