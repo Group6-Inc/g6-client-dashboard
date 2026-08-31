@@ -839,11 +839,13 @@ function g6_render_dashboard(): void {
 						<label class="g6-contact-form__label" for="g6-subject">Subject</label>
 						<select class="g6-contact-form__select" id="g6-subject" name="subject">
 							<option value="">Choose a topic&hellip;</option>
-							<option value="Website Update Request">Website Update Request</option>
-							<option value="SEO Question">SEO Question</option>
-							<option value="New Service Inquiry">New Service Inquiry</option>
-							<option value="Bug Report">Bug Report</option>
-							<option value="General Question">General Question</option>
+							<option value="I would like to update my website">I would like to update my website</option>
+							<option value="Hosting-related issues">Hosting-related issues</option>
+							<option value="Design/branding requests or issues">Design/branding requests or issues</option>
+							<option value="New feature request">New feature request</option>
+							<option value="Billing/account">Billing/account</option>
+							<option value="I need training on a specific topic">I need training on a specific topic</option>
+							<option value="Other - My issue is not listed">Other - My issue is not listed</option>
 						</select>
 					</div>
 					<div class="g6-contact-form__field">

@@ -83,6 +83,16 @@ class Updater {
 		return is_object( $manifest ) ? $manifest : false;
 	}
 
+	// ── Public accessor for the changelog (used by the Settings → Plugin tab) ──
+
+	public function get_changelog_html(): string {
+		$manifest = $this->fetch_manifest();
+		if ( ! $manifest || empty( $manifest->sections->changelog ) ) {
+			return '<p>Changelog unavailable right now — try again after the next update check.</p>';
+		}
+		return $manifest->sections->changelog;
+	}
+
 	// ── Populate the plugin details modal ──────────────────────────────
 
 	public function plugin_info( mixed $response, string $action, object $args ): mixed {

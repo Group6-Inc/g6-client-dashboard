@@ -3,7 +3,7 @@
  * Plugin Name:  Group6 Client Dashboard
  * Plugin URI:   https://github.com/Group6-Inc/g6-client-dashboard
  * Description:  Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.
- * Version:      0.3.14
+ * Version:      0.4.0
  * Author:       Group6
  * Author URI:   https://group6inc.com
  * License:      Proprietary
@@ -25,7 +25,7 @@ if ( defined( 'G6_DASHBOARD_VERSION' ) ) {
 	return;
 }
 
-define( 'G6_DASHBOARD_VERSION',   '0.3.14' );
+define( 'G6_DASHBOARD_VERSION',   '0.4.0' );
 define( 'G6_DASHBOARD_FILE',      __FILE__ );
 define( 'G6_DASHBOARD_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
@@ -78,8 +78,8 @@ require_once G6_DASHBOARD_DIR . 'includes/ajax.php';
 require_once G6_DASHBOARD_DIR . 'includes/settings.php';
 require_once G6_DASHBOARD_DIR . 'includes/tracking.php';
 
-// Boot the updater.
-new G6\Dashboard\Updater( G6_DASHBOARD_VERSION );
+// Boot the updater. Stored globally so Settings → Plugin can pull the changelog.
+$GLOBALS['g6_dashboard_updater'] = new G6\Dashboard\Updater( G6_DASHBOARD_VERSION );
 
 // Conditionally boot the Asset Manager based on settings.
 add_action( 'plugins_loaded', function() {
