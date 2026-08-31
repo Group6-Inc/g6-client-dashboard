@@ -11,6 +11,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 add_action( 'wp_ajax_g6_contact_submit', 'g6_handle_contact_submit' );
 
+/**
+ * Persist a rolling log of Zendesk ticket-creation failures/suspensions so
+ * they're readable in Settings → Plugin without needing server log access.
+ */
+function g6_log_zendesk_issue( string $client_name, string $reason, int $code, string $response_body ): void {
+	$log = get_option( 'g6_zendesk_failure_log', [] );
+	if ( ! is_array( $log ) ) {
+		$log = [];
+	}
+	array_unshift( $log, [
+		'time'   => current_time( 'mysql' ),
+		'client' => $client_name,
+		'reason' => $reason,
+		'code'   => $code,
+		'body'   => mb_substr( $response_body, 0, 500 ),
+	] );
+	update_option( 'g6_zendesk_failure_log', array_slice( $log, 0, 30 ), false );
+}
+
 function g6_handle_contact_submit(): void {
 	check_ajax_referer( 'g6_contact_nonce' );
 
@@ -92,20 +111,19 @@ function g6_handle_contact_submit(): void {
 
 			// Log the failure/suspension reason — otherwise a silent fallback
 			// to email leaves no trace of why Zendesk didn't produce a normal,
-			// visible ticket.
-			error_log( sprintf(
-				'[G6 Dashboard] Zendesk %s (HTTP %d) for %s: %s',
-				$is_suspended ? 'ticket was suspended (unverified requester email — check Zendesk\'s Suspended Tickets view)' : 'ticket creation failed',
-				$code,
-				esc_html( $cfg['client_name'] ),
-				$response_body
-			) );
+			// visible ticket. Written both to the PHP error log and to a WP
+			// option shown in Settings → Plugin, since server log access
+			// isn't always practical to reach.
+			$reason = $is_suspended ? 'Ticket suspended (unverified requester email)' : 'Ticket creation failed';
+			error_log( sprintf( '[G6 Dashboard] Zendesk %s (HTTP %d) for %s: %s', $reason, $code, esc_html( $cfg['client_name'] ), $response_body ) );
+			g6_log_zendesk_issue( $cfg['client_name'], $reason, $code, $response_body );
 		} else {
 			error_log( sprintf(
 				'[G6 Dashboard] Zendesk request errored for %s: %s',
 				esc_html( $cfg['client_name'] ),
 				$response->get_error_message()
 			) );
+			g6_log_zendesk_issue( $cfg['client_name'], 'Request errored', 0, $response->get_error_message() );
 		}
 		// Fall through to email if Zendesk fails or suspends the ticket.
 	}

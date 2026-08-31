@@ -69,11 +69,12 @@ function g6_settings_icon_options(): array {
 // ── Save handler ──────────────────────────────────────────────────────────────
 
 function g6_settings_handle_save( array &$config ): void {
-	$is_save             = isset( $_POST['g6_save_settings'] );
-	$is_refresh          = isset( $_POST['g6_gmb_refresh'] );
-	$is_airtable_refresh = isset( $_POST['g6_airtable_refresh'] );
+	$is_save              = isset( $_POST['g6_save_settings'] );
+	$is_refresh           = isset( $_POST['g6_gmb_refresh'] );
+	$is_airtable_refresh  = isset( $_POST['g6_airtable_refresh'] );
+	$is_clear_zendesk_log = isset( $_POST['g6_clear_zendesk_log'] );
 
-	if ( ( ! $is_save && ! $is_refresh && ! $is_airtable_refresh ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
+	if ( ( ! $is_save && ! $is_refresh && ! $is_airtable_refresh && ! $is_clear_zendesk_log ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
 		return;
 	}
 
@@ -85,6 +86,11 @@ function g6_settings_handle_save( array &$config ): void {
 
 	if ( $is_airtable_refresh ) {
 		g6_airtable_clear_cache( $config['support_hours_record_id'] ?? '' );
+		return;
+	}
+
+	if ( $is_clear_zendesk_log ) {
+		delete_option( 'g6_zendesk_failure_log' );
 		return;
 	}
 
@@ -1082,6 +1088,46 @@ function g6_settings_page_render(): void {
 				<div class="g6-changelog-box">
 					<?php echo wp_kses_post( $_changelog_html ); ?>
 				</div>
+
+				<h2 class="title" style="margin-top:28px;">Zendesk Failure Log</h2>
+				<p class="description">Recent Zendesk ticket-creation failures or suspensions from the dashboard's contact form — a message that hit one of these still went out via the email fallback.</p>
+				<?php
+				$_zendesk_log = get_option( 'g6_zendesk_failure_log', [] );
+				if ( ! is_array( $_zendesk_log ) ) {
+					$_zendesk_log = [];
+				}
+				?>
+				<?php if ( empty( $_zendesk_log ) ) : ?>
+					<p class="description" style="margin-top:8px;">No failures logged.</p>
+				<?php else : ?>
+					<div class="g6-changelog-box">
+						<table class="widefat striped" style="font-size:12.5px;">
+							<thead>
+								<tr>
+									<th>Time</th>
+									<th>Client</th>
+									<th>Reason</th>
+									<th>HTTP</th>
+									<th>Details</th>
+								</tr>
+							</thead>
+							<tbody>
+								<?php foreach ( $_zendesk_log as $_entry ) : ?>
+								<tr>
+									<td style="white-space:nowrap;"><?php echo esc_html( $_entry['time'] ?? '' ); ?></td>
+									<td><?php echo esc_html( $_entry['client'] ?? '' ); ?></td>
+									<td><?php echo esc_html( $_entry['reason'] ?? '' ); ?></td>
+									<td><?php echo esc_html( $_entry['code'] ?? '' ); ?></td>
+									<td><code style="font-size:11px; word-break:break-all;"><?php echo esc_html( $_entry['body'] ?? '' ); ?></code></td>
+								</tr>
+								<?php endforeach; ?>
+							</tbody>
+						</table>
+					</div>
+					<p style="margin-top:10px;">
+						<button type="submit" name="g6_clear_zendesk_log" value="1" class="button button-secondary">Clear Log</button>
+					</p>
+				<?php endif; ?>
 
 			</div><!-- /tab: plugin -->
 
