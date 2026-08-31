@@ -29,6 +29,19 @@ function g6_handle_contact_submit(): void {
 	if ( defined( 'G6_ZENDESK_SUBDOMAIN' ) && G6_ZENDESK_SUBDOMAIN ) {
 		$zendesk_url = sprintf( 'https://%s.zendesk.com/api/v2/requests.json', G6_ZENDESK_SUBDOMAIN );
 
+		// Required custom field on this Zendesk instance ("What is your issue?",
+		// field ID 38403385125267) — maps our dashboard's subject dropdown to
+		// its dropdown tag values. Falls back to "customer_other" for anything
+		// without a clean match, or if the subject options ever change.
+		$zendesk_issue_field_map = [
+			'Website Update Request' => 'customer_update',
+			'SEO Question'           => 'customer_other',
+			'New Service Inquiry'    => 'customer_feature',
+			'Bug Report'             => 'customer_other',
+			'General Question'       => 'customer_other',
+		];
+		$zendesk_issue_tag = $zendesk_issue_field_map[ $subject ] ?? 'customer_other';
+
 		$body = wp_json_encode( [
 			'request' => [
 				'requester' => [
@@ -45,6 +58,9 @@ function g6_handle_contact_submit(): void {
 						$subject,
 						$message
 					),
+				],
+				'fields' => [
+					[ 'id' => 38403385125267, 'value' => $zendesk_issue_tag ],
 				],
 			],
 		] );
