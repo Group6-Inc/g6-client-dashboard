@@ -60,6 +60,20 @@ function g6_handle_contact_submit(): void {
 			if ( $code >= 200 && $code < 300 ) {
 				wp_send_json_success( 'Zendesk ticket created.' );
 			}
+			// Log the failure reason — otherwise a silent fallback to email
+			// leaves no trace of why Zendesk rejected the request.
+			error_log( sprintf(
+				'[G6 Dashboard] Zendesk ticket creation failed (HTTP %d) for %s: %s',
+				$code,
+				esc_html( $cfg['client_name'] ),
+				wp_remote_retrieve_body( $response )
+			) );
+		} else {
+			error_log( sprintf(
+				'[G6 Dashboard] Zendesk request errored for %s: %s',
+				esc_html( $cfg['client_name'] ),
+				$response->get_error_message()
+			) );
 		}
 		// Fall through to email if Zendesk fails.
 	}
