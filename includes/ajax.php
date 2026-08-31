@@ -30,15 +30,18 @@ function g6_handle_contact_submit(): void {
 		$zendesk_url = sprintf( 'https://%s.zendesk.com/api/v2/requests.json', G6_ZENDESK_SUBDOMAIN );
 
 		// Required custom field on this Zendesk instance ("What is your issue?",
-		// field ID 38403385125267) — maps our dashboard's subject dropdown to
-		// its dropdown tag values. Falls back to "customer_other" for anything
-		// without a clean match, or if the subject options ever change.
+		// field ID 38403385125267). Our dashboard's subject dropdown is meant
+		// to mirror this field's options 1:1 (see the <select> in
+		// includes/dashboard.php) — keep both lists in sync if either changes.
+		// Falls back to "customer_other" defensively in case the two ever drift.
 		$zendesk_issue_field_map = [
-			'Website Update Request' => 'customer_update',
-			'SEO Question'           => 'customer_other',
-			'New Service Inquiry'    => 'customer_feature',
-			'Bug Report'             => 'customer_other',
-			'General Question'       => 'customer_other',
+			'I would like to update my website' => 'customer_update',
+			'Hosting-related issues' => 'customer_hosting',
+			'Design/branding requests or issues' => 'customer_design',
+			'New feature request' => 'customer_feature',
+			'Billing/account' => 'customer_billing',
+			'I need training on a specific topic' => 'customer_training',
+			'Other - My issue is not listed' => 'customer_other',
 		];
 		$zendesk_issue_tag = $zendesk_issue_field_map[ $subject ] ?? 'customer_other';
 
