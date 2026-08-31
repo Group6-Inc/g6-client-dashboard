@@ -75,17 +75,30 @@ function g6_handle_contact_submit(): void {
 		] );
 
 		if ( ! is_wp_error( $response ) ) {
-			$code = wp_remote_retrieve_response_code( $response );
-			if ( $code >= 200 && $code < 300 ) {
+			$code          = wp_remote_retrieve_response_code( $response );
+			$response_body = wp_remote_retrieve_body( $response );
+			$decoded       = json_decode( $response_body, true );
+			// A 2xx response can still mean the ticket was SUSPENDED rather
+			// than actually opened — Zendesk does this for requester emails
+			// it doesn't already recognise as a verified contact. Suspended
+			// tickets sit in a separate queue, invisible in the normal ticket
+			// view, so treat this as not-fully-successful and still fall
+			// back to email rather than risk the message going unseen.
+			$is_suspended = is_array( $decoded ) && isset( $decoded['suspended_ticket'] );
+
+			if ( $code >= 200 && $code < 300 && ! $is_suspended ) {
 				wp_send_json_success( 'Zendesk ticket created.' );
 			}
-			// Log the failure reason — otherwise a silent fallback to email
-			// leaves no trace of why Zendesk rejected the request.
+
+			// Log the failure/suspension reason — otherwise a silent fallback
+			// to email leaves no trace of why Zendesk didn't produce a normal,
+			// visible ticket.
 			error_log( sprintf(
-				'[G6 Dashboard] Zendesk ticket creation failed (HTTP %d) for %s: %s',
+				'[G6 Dashboard] Zendesk %s (HTTP %d) for %s: %s',
+				$is_suspended ? 'ticket was suspended (unverified requester email — check Zendesk\'s Suspended Tickets view)' : 'ticket creation failed',
 				$code,
 				esc_html( $cfg['client_name'] ),
-				wp_remote_retrieve_body( $response )
+				$response_body
 			) );
 		} else {
 			error_log( sprintf(
@@ -94,7 +107,7 @@ function g6_handle_contact_submit(): void {
 				$response->get_error_message()
 			) );
 		}
-		// Fall through to email if Zendesk fails.
+		// Fall through to email if Zendesk fails or suspends the ticket.
 	}
 
 	// ── Email fallback ─────────────────────────────────────────────────
