@@ -65,18 +65,18 @@ is('portal => portal', g6_support_hours_source(['support_hours_source' => 'porta
 
 // ── 2. Base URL precedence, and trailing slashes ──
 is('blank setting => production', g6_api_base([]), 'https://portal.group6inc.com/api/v1');
-is('setting wins over default', g6_api_base(['support_hours_portal_url' => 'http://wp.test/api/v1']), 'http://wp.test/api/v1');
-is('trailing slash trimmed', g6_api_base(['support_hours_portal_url' => 'http://wp.test/api/v1/']), 'http://wp.test/api/v1');
+is('setting wins over default', g6_api_base(['portal_url' => 'http://wp.test/api/v1']), 'http://wp.test/api/v1');
+is('trailing slash trimmed', g6_api_base(['portal_url' => 'http://wp.test/api/v1/']), 'http://wp.test/api/v1');
 
 // ── 3. Cache identity includes the base URL ──
-$a = g6_api_transient_key('support-hours', 'tok', ['support_hours_portal_url' => 'https://a.test/api/v1']);
-$b = g6_api_transient_key('support-hours', 'tok', ['support_hours_portal_url' => 'https://b.test/api/v1']);
+$a = g6_api_transient_key('support-hours', 'tok', ['portal_url' => 'https://a.test/api/v1']);
+$b = g6_api_transient_key('support-hours', 'tok', ['portal_url' => 'https://b.test/api/v1']);
 is('different portal => different key', $a !== $b, true);
-$c = g6_api_transient_key('support-hours', 'other', ['support_hours_portal_url' => 'https://a.test/api/v1']);
+$c = g6_api_transient_key('support-hours', 'other', ['portal_url' => 'https://a.test/api/v1']);
 is('different token => different key', $a !== $c, true);
 
 // ── 4. A successful fetch is passed through and cached ──
-$GLOBALS['cfg'] = ['support_hours_portal_url' => 'https://a.test/api/v1'];
+$GLOBALS['cfg'] = ['portal_url' => 'https://a.test/api/v1'];
 $GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode([
     'active' => true, 'balance_hours' => 12.5, 'total_hours' => 40.0, 'fetched_at' => '2026-09-04 11:00:00',
 ])];
@@ -107,11 +107,37 @@ is('no token => false', g6_api_get_support_hours(''), false);
 is('no token => no request at all', count($GLOBALS['http']['calls']), 0);
 
 // ── 6. Clearing under the old key when settings change ──
-$old = ['support_hours_portal_url' => 'https://a.test/api/v1'];
-$GLOBALS['cfg'] = ['support_hours_portal_url' => 'https://b.test/api/v1'];
+$old = ['portal_url' => 'https://a.test/api/v1'];
+$GLOBALS['cfg'] = ['portal_url' => 'https://b.test/api/v1'];
 $GLOBALS['t'][g6_api_transient_key('support-hours', 'tok', $old)] = ['balance_hours' => 99];
 g6_api_clear_cache('tok', $old);
 is('old entry is gone', get_transient(g6_api_transient_key('support-hours', 'tok', $old)), false);
+
+// ── 7. Destination defaults, same upgrade-safety rule as the source ──
+is('no destination saved => zendesk', g6_tickets_destination([]), 'zendesk');
+is('garbage => zendesk', g6_tickets_destination(['tickets_destination' => 'nonsense']), 'zendesk');
+is('portal => portal', g6_tickets_destination(['tickets_destination' => 'portal']), 'portal');
+
+// ── 8. The token is one shared connection, not a per-feature setting ──
+is('token read from the shared key', g6_portal_token(['portal_token' => ' abc ']), 'abc');
+is('missing token => empty', g6_portal_token([]), '');
+
+// ── 9. Submitting sends no category ──────────────────────────────────
+// The dropdown mirrors Zendesk's issue-type field in prose; none of its
+// values is a portal category slug, so sending one would be a 422.
+function wp_get_current_user() {
+    return new class { public function exists() { return true; }
+        public $user_email = 'jane@acme.test'; public $display_name = 'Jane'; };
+}
+function home_url() { return 'https://acme.test'; }
+$GLOBALS['cfg'] = ['portal_url' => 'https://a.test/api/v1'];
+$GLOBALS['http'] = ['code' => 201, 'body' => '{"id":7}', 'calls' => []];
+$made = g6_api_submit_ticket('tok', ['subject' => 'Hosting-related issues', 'body' => 'help']);
+is('ticket created', $made['id'], 7);
+$sent = $GLOBALS['http']['calls'][0]['args']['body'];
+is('no category is sent', array_key_exists('category', $sent), false);
+is('the chosen topic survives as the subject', $sent['subject'], 'Hosting-related issues');
+is('the wp user identifies the sender', $sent['email'], 'jane@acme.test');
 
 printf("\n%d passed, %d failed\n", $pass, $fail);
 exit($fail ? 1 : 0);

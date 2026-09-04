@@ -42,10 +42,52 @@ function g6_handle_contact_submit(): void {
 		wp_send_json_error( [ 'message' => 'Please fill in all fields.' ] );
 	}
 
+	// ── The Group6 portal, when this site is cut over ──────────────────
+	// Same contract as the Zendesk block below: succeed and stop, or fall
+	// through to the email fallback. That safety net is the reason this
+	// handler is shaped the way it is, and a new destination does not get
+	// to opt out of it.
+	if ( function_exists( 'g6_tickets_destination' ) && 'portal' === g6_tickets_destination( $cfg ) ) {
+		$portal_token = g6_portal_token( $cfg );
+
+		if ( $portal_token ) {
+			// No category is sent on purpose. The portal's categories and
+			// this form's dropdown do not line up — the dropdown mirrors
+			// Zendesk's issue-type field, in prose — so anything sent
+			// would be guesswork or a 422. The portal files it under its
+			// default category, and the chosen topic is preserved as the
+			// subject where a human reads it.
+			$result = g6_api_submit_ticket( $portal_token, [
+				'subject'  => $subject,
+				'body'     => $message,
+				'site_url' => home_url(),
+			] );
+
+			if ( ! is_wp_error( $result ) ) {
+				wp_send_json_success( 'Ticket opened in the Group6 portal.' );
+			}
+
+			error_log( sprintf(
+				'[G6 Dashboard] Portal ticket failed for %s: %s',
+				esc_html( $cfg['client_name'] ),
+				$result->get_error_message()
+			) );
+			g6_log_zendesk_issue( $cfg['client_name'], 'Portal: ' . $result->get_error_message(), 0, '' );
+		} else {
+			g6_log_zendesk_issue( $cfg['client_name'], 'Portal: no site token configured', 0, '' );
+		}
+
+		// Deliberately does NOT try Zendesk after the portal fails. A site
+		// that has been cut over should not quietly start filing tickets
+		// back into the tool it was moved off — the message goes to email,
+		// where somebody sees it and acts.
+		$skip_zendesk = true;
+	}
+
 	// ── Try Zendesk first ──────────────────────────────────────────────
 	// Subdomain is hardcoded via G6_ZENDESK_SUBDOMAIN in the main plugin file.
 	// To switch tools, update that constant or replace this block.
-	if ( defined( 'G6_ZENDESK_SUBDOMAIN' ) && G6_ZENDESK_SUBDOMAIN ) {
+	if ( empty( $skip_zendesk ) && defined( 'G6_ZENDESK_SUBDOMAIN' ) && G6_ZENDESK_SUBDOMAIN ) {
 		$zendesk_url = sprintf( 'https://%s.zendesk.com/api/v2/requests.json', G6_ZENDESK_SUBDOMAIN );
 
 		// Required custom field on this Zendesk instance ("What is your issue?",

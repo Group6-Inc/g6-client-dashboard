@@ -39,7 +39,7 @@ function g6_api_base( ?array $cfg = null ): string {
 	}
 
 	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
-	$url = trim( $cfg['support_hours_portal_url'] ?? '' );
+	$url = trim( $cfg['portal_url'] ?? '' );
 
 	return $url ? rtrim( $url, '/' ) : G6_API_DEFAULT_BASE;
 }
@@ -130,6 +130,26 @@ function g6_api_get( string $endpoint, string $token ): array|false {
 	return $data;
 }
 
+/** This site's portal credential, wherever it is being used. */
+function g6_portal_token( ?array $cfg = null ): string {
+	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
+
+	return trim( $cfg['portal_token'] ?? '' );
+}
+
+/**
+ * Where the Get in Touch form files a request.
+ *
+ * Anything that is not exactly 'portal' means Zendesk, for the same
+ * reason the support-hours source works that way: a site updating to
+ * this version has nothing saved, and must carry on doing what it did.
+ */
+function g6_tickets_destination( ?array $cfg = null ): string {
+	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
+
+	return ( ( $cfg['tickets_destination'] ?? 'zendesk' ) === 'portal' ) ? 'portal' : 'zendesk';
+}
+
 /**
  * Which source the Support Hours widget reads from.
  *
@@ -174,6 +194,24 @@ function g6_api_submit_ticket( string $token, array $fields ): array|WP_Error {
 		return new WP_Error( 'g6_api_no_user', 'You must be logged in to submit a ticket.' );
 	}
 
+	// No category unless the caller has a real slug to send. The draft of
+	// this file defaulted to 'general', which happens to be a slug today
+	// — but the portal's categories are staff-editable, and hiding or
+	// renaming that one would start rejecting every request from every
+	// site. Omitting it lets the portal apply its own default, which is
+	// the thing that knows what the default currently is.
+	$payload = [
+		'email'    => $user->user_email,
+		'name'     => $user->display_name,
+		'subject'  => $fields['subject'] ?? '',
+		'body'     => $fields['body'] ?? '',
+		'site_url' => $fields['site_url'] ?? home_url(),
+	];
+
+	if ( ! empty( $fields['category'] ) ) {
+		$payload['category'] = $fields['category'];
+	}
+
 	$response = wp_remote_post(
 		g6_api_base() . '/tickets',
 		[
@@ -182,14 +220,7 @@ function g6_api_submit_ticket( string $token, array $fields ): array|WP_Error {
 				'Authorization' => 'Bearer ' . $token,
 				'Accept'        => 'application/json',
 			],
-			'body'    => [
-				'email'    => $user->user_email,
-				'name'     => $user->display_name,
-				'subject'  => $fields['subject'] ?? '',
-				'body'     => $fields['body'] ?? '',
-				'category' => $fields['category'] ?? 'general',
-				'site_url' => $fields['site_url'] ?? home_url(),
-			],
+			'body'    => $payload,
 		]
 	);
 

@@ -453,7 +453,7 @@ function g6_render_dashboard(): void {
 	$_sh_data    = false;
 
 	if ( $_sh_enabled && 'portal' === $_sh_source ) {
-		$_sh_data = g6_api_get_support_hours( $cfg['support_hours_portal_token'] ?? '' );
+		$_sh_data = g6_api_get_support_hours( $cfg['portal_token'] ?? '' );
 	} elseif ( $_sh_enabled ) {
 		$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
 		$_sh_api_key   = $cfg['support_hours_api_key'] ?? '';
