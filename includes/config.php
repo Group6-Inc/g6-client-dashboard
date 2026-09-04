@@ -202,10 +202,16 @@ function g6_default_config(): array {
 		'reviews_cta_text'     => '',
 		'reviews_api_key'      => '',
 
-		// Airtable Support Hours integration (dashboard sidebar).
-		'support_hours_enabled'   => false,
-		'support_hours_api_key'   => '', // Personal Access Token
-		'support_hours_record_id' => '',
+		// Support Hours integration (dashboard sidebar). One widget, two
+		// possible sources — Airtable as it has always worked, or the
+		// Group6 client portal. Airtable stays the default so existing
+		// sites carry on unchanged after an update.
+		'support_hours_enabled'      => false,
+		'support_hours_source'       => 'airtable', // 'airtable' | 'portal'
+		'support_hours_api_key'      => '', // Airtable Personal Access Token
+		'support_hours_record_id'    => '',
+		'support_hours_portal_token' => '', // per-site token from the portal
+		'support_hours_portal_url'   => '', // blank = the production portal
 
 		// Developer tools.
 		'asset_manager_enabled'    => false,

@@ -85,7 +85,11 @@ function g6_settings_handle_save( array &$config ): void {
 	}
 
 	if ( $is_airtable_refresh ) {
-		g6_airtable_clear_cache( $config['support_hours_record_id'] ?? '' );
+		if ( 'portal' === g6_support_hours_source( $config ) ) {
+			g6_api_clear_cache( $config['support_hours_portal_token'] ?? '' );
+		} else {
+			g6_airtable_clear_cache( $config['support_hours_record_id'] ?? '' );
+		}
 		return;
 	}
 
@@ -100,16 +104,44 @@ function g6_settings_handle_save( array &$config ): void {
 	$config['agency_rep_phone'] = sanitize_text_field( $_POST['rep_phone']  ?? '' );
 	$config['agency_rep_photo'] = esc_url_raw( $_POST['rep_photo']          ?? '' );
 
-	// Airtable Support Hours.
-	$old_record_id = $config['support_hours_record_id'] ?? '';
-	$new_record_id = g6_airtable_parse_record_id( $_POST['support_hours_record_id'] ?? '' );
+	// Support Hours — one widget, either source.
+	$old_record_id   = $config['support_hours_record_id'] ?? '';
+	$new_record_id   = g6_airtable_parse_record_id( $_POST['support_hours_record_id'] ?? '' );
+	$old_token       = $config['support_hours_portal_token'] ?? '';
+	$old_portal_url  = $config['support_hours_portal_url'] ?? '';
+	$new_source      = ( ( $_POST['support_hours_source'] ?? 'airtable' ) === 'portal' ) ? 'portal' : 'airtable';
 
 	$config['support_hours_enabled']   = isset( $_POST['support_hours_enabled'] );
+	$config['support_hours_source']    = $new_source;
 	$config['support_hours_api_key']   = sanitize_text_field( $_POST['support_hours_api_key'] ?? '' );
 	$config['support_hours_record_id'] = $new_record_id;
 
+	// The token is pasted, so it arrives with whatever whitespace came
+	// with it. sanitize_text_field alone leaves an inner newline intact,
+	// and a header value with a newline in it is refused by wp_remote_get
+	// with an error that says nothing about the real cause.
+	$config['support_hours_portal_token'] = preg_replace(
+		'/\s+/',
+		'',
+		sanitize_text_field( $_POST['support_hours_portal_token'] ?? '' )
+	);
+
+	// Blank means the production portal; anything else is a deliberate
+	// override for a staging or local install.
+	$config['support_hours_portal_url'] = esc_url_raw( trim( $_POST['support_hours_portal_url'] ?? '' ) );
+
 	if ( $old_record_id && $old_record_id !== $new_record_id ) {
 		g6_airtable_clear_cache( $old_record_id );
+	}
+
+	// Cached responses are keyed by token AND base URL, so changing
+	// either strands the old entry rather than replacing it. Drop it
+	// under the old key while we still know what that key was.
+	if ( $old_token && ( $old_token !== $config['support_hours_portal_token']
+		|| $old_portal_url !== $config['support_hours_portal_url'] ) ) {
+		$stale = $config;
+		$stale['support_hours_portal_url'] = $old_portal_url;
+		g6_api_clear_cache( $old_token, $stale );
 	}
 
 	$config['widgets'] = [
@@ -366,20 +398,37 @@ function g6_settings_page_render(): void {
 						<?php endif; ?>
 					</div>
 
-					<!-- Support Hours (Airtable) -->
+					<!-- Support Hours -->
 					<?php
-					$_sh_record_id    = $cfg['support_hours_record_id'] ?? '';
-					$_sh_api_key      = $cfg['support_hours_api_key']   ?? '';
-					$_sh_has_config   = $_sh_record_id && $_sh_api_key;
-					$_sh_error        = $_sh_record_id ? g6_airtable_get_last_error( $_sh_record_id ) : '';
-					$_sh_cached       = $_sh_record_id ? get_transient( g6_airtable_transient_key( $_sh_record_id ) ) : false;
+					$_sh_record_id     = $cfg['support_hours_record_id'] ?? '';
+					$_sh_api_key       = $cfg['support_hours_api_key']   ?? '';
+					$_sh_source        = g6_support_hours_source( $cfg );
+					$_sh_is_portal     = ( 'portal' === $_sh_source );
+					$_sh_portal_token  = $cfg['support_hours_portal_token'] ?? '';
+					$_sh_portal_url    = $cfg['support_hours_portal_url']   ?? '';
+					$_sh_url_locked    = defined( 'G6_API_BASE' ) && G6_API_BASE;
+
+					// Both branches answer the same three questions, so the
+					// status line below reads the same either way.
+					if ( $_sh_is_portal ) {
+						$_sh_has_config = (bool) $_sh_portal_token;
+						$_sh_error      = $_sh_portal_token ? g6_api_get_last_error( 'support-hours', $_sh_portal_token ) : '';
+						$_sh_cached     = $_sh_portal_token ? get_transient( g6_api_transient_key( 'support-hours', $_sh_portal_token ) ) : false;
+						$_sh_refresh_in = '30 min';
+					} else {
+						$_sh_has_config = $_sh_record_id && $_sh_api_key;
+						$_sh_error      = $_sh_record_id ? g6_airtable_get_last_error( $_sh_record_id ) : '';
+						$_sh_cached     = $_sh_record_id ? get_transient( g6_airtable_transient_key( $_sh_record_id ) ) : false;
+						$_sh_refresh_in = '6 h';
+					}
+
 					$_sh_last_fetched = ( is_array( $_sh_cached ) && isset( $_sh_cached['fetched_at'] ) ) ? $_sh_cached['fetched_at'] : '';
 					?>
 					<div class="g6s-card g6s-card--full<?php echo empty( $cfg['support_hours_enabled'] ) ? ' g6w-card--disabled' : ''; ?>" id="g6-support-hours-card">
 						<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
 							<div class="g6s-card__header">
 								<h3 class="g6s-card__title">Support Hours</h3>
-								<p class="g6s-card__desc">Shows the client's remaining support-hour balance from Airtable in the dashboard sidebar.</p>
+								<p class="g6s-card__desc">Shows the client's remaining support-hour balance in the dashboard sidebar.</p>
 							</div>
 							<label class="g6w-toggle" style="flex-shrink:0; margin-top:2px;">
 								<input type="checkbox" id="support_hours_enabled" name="support_hours_enabled" <?php checked( ! empty( $cfg['support_hours_enabled'] ) ); ?>>
@@ -387,24 +436,68 @@ function g6_settings_page_render(): void {
 							</label>
 						</div>
 						<div id="g6-support-hours-fields" class="g6w-card__settings"<?php echo empty( $cfg['support_hours_enabled'] ) ? ' style="display:none"' : ''; ?>>
-							<div class="g6s-field-row">
-								<div class="g6s-field">
-									<label class="g6s-field__label" for="support_hours_api_key">Airtable Personal Access Token</label>
-									<input class="g6s-field__input" type="password" id="support_hours_api_key" name="support_hours_api_key"
-										value="<?php echo esc_attr( $_sh_api_key ); ?>" placeholder="pat…">
-								</div>
-								<div class="g6s-field">
-									<label class="g6s-field__label" for="support_hours_record_id">Airtable Record URL or ID</label>
-									<input class="g6s-field__input" type="text" id="support_hours_record_id" name="support_hours_record_id"
-										value="<?php echo esc_attr( $_sh_record_id ); ?>" placeholder="Paste the record URL, or recXXXXXXXXXXXXXX">
-								</div>
+							<div class="g6s-field" style="max-width:320px;">
+								<label class="g6s-field__label" for="support_hours_source">Read the balance from</label>
+								<select class="g6s-field__input" id="support_hours_source" name="support_hours_source">
+									<option value="airtable" <?php selected( ! $_sh_is_portal ); ?>>Airtable</option>
+									<option value="portal" <?php selected( $_sh_is_portal ); ?>>Group6 Client Portal</option>
+								</select>
 							</div>
-							<p class="description" style="margin-top:6px;">
-								Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
-							</p>
-							<p class="description" style="margin-top:6px;">
-								<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
-							</p>
+
+							<!-- Airtable -->
+							<div class="g6-sh-source" data-source="airtable"<?php echo $_sh_is_portal ? ' style="display:none"' : ''; ?>>
+								<div class="g6s-field-row">
+									<div class="g6s-field">
+										<label class="g6s-field__label" for="support_hours_api_key">Airtable Personal Access Token</label>
+										<input class="g6s-field__input" type="password" id="support_hours_api_key" name="support_hours_api_key"
+											value="<?php echo esc_attr( $_sh_api_key ); ?>" placeholder="pat…" autocomplete="off">
+									</div>
+									<div class="g6s-field">
+										<label class="g6s-field__label" for="support_hours_record_id">Airtable Record URL or ID</label>
+										<input class="g6s-field__input" type="text" id="support_hours_record_id" name="support_hours_record_id"
+											value="<?php echo esc_attr( $_sh_record_id ); ?>" placeholder="Paste the record URL, or recXXXXXXXXXXXXXX">
+									</div>
+								</div>
+								<p class="description" style="margin-top:6px;">
+									Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
+								</p>
+								<p class="description" style="margin-top:6px;">
+									<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
+								</p>
+							</div>
+
+							<!-- Group6 Client Portal -->
+							<div class="g6-sh-source" data-source="portal"<?php echo $_sh_is_portal ? '' : ' style="display:none"'; ?>>
+								<div class="g6s-field-row">
+									<div class="g6s-field">
+										<label class="g6s-field__label" for="support_hours_portal_token">Portal Site Token</label>
+										<input class="g6s-field__input" type="password" id="support_hours_portal_token" name="support_hours_portal_token"
+											value="<?php echo esc_attr( $_sh_portal_token ); ?>" placeholder="Paste the token from the portal" autocomplete="off">
+									</div>
+									<div class="g6s-field">
+										<label class="g6s-field__label" for="support_hours_portal_url">Portal API URL</label>
+										<input class="g6s-field__input" type="text" id="support_hours_portal_url" name="support_hours_portal_url"
+											value="<?php echo esc_attr( $_sh_portal_url ); ?>"
+											placeholder="<?php echo esc_attr( G6_API_DEFAULT_BASE ); ?>"
+											<?php disabled( $_sh_url_locked ); ?>>
+									</div>
+								</div>
+								<p class="description" style="margin-top:6px;">
+									Group6 issues this token per site: <strong>Clients → the client → Websites → Generate token</strong>. It is shown once. The token is what identifies this site, so nothing else needs configuring — and unlike the Airtable token it can only ever read <em>this</em> client's hours.
+								</p>
+								<p class="description" style="margin-top:6px;">
+									<?php if ( $_sh_url_locked ) : ?>
+										The API URL is fixed to <code><?php echo esc_html( g6_api_base() ); ?></code> by a <code>G6_API_BASE</code> constant in <code>wp-config.php</code>.
+									<?php else : ?>
+										Leave the URL blank unless you are testing — blank means <code><?php echo esc_html( G6_API_DEFAULT_BASE ); ?></code>. A <code>G6_API_BASE</code> constant in <code>wp-config.php</code> overrides this field.
+									<?php endif; ?>
+								</p>
+								<?php if ( $_sh_portal_token && ! $_sh_url_locked && $_sh_portal_url && 0 !== strpos( $_sh_portal_url, 'https://' ) ) : ?>
+									<p class="description" style="margin-top:6px; color:#d63638;">
+										<strong>This URL is not https.</strong> The site token is sent on every request as a bearer header — over plain http anyone on the network path can read it. Only do this against a local install.
+									</p>
+								<?php endif; ?>
+							</div>
 
 							<?php if ( $_sh_has_config ) : ?>
 							<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
@@ -414,7 +507,7 @@ function g6_settings_page_render(): void {
 								<?php if ( $_sh_error ) : ?>
 									<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_sh_error ); ?></span>
 								<?php elseif ( $_sh_last_fetched ) : ?>
-									<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every 6 h</span>
+									<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every <?php echo esc_html( $_sh_refresh_in ); ?></span>
 								<?php else : ?>
 									<span class="description">Not yet fetched — save to pull data.</span>
 								<?php endif; ?>
@@ -1618,6 +1711,22 @@ function g6_settings_page_render(): void {
 				if (shFields) shFields.style.display = this.checked ? '' : 'none';
 				if (shCard)   shCard.classList.toggle('g6w-card--disabled', !this.checked);
 			});
+		}
+
+		// Support Hours source → which set of credentials is on show.
+		// Both panels stay in the DOM and keep their values, so switching
+		// back and forth does not make you re-paste anything; only one is
+		// ever read, because the saved source decides which is used.
+		var shSource = document.getElementById('support_hours_source');
+		if (shSource) {
+			var apply = function() {
+				var chosen = shSource.value;
+				document.querySelectorAll('.g6-sh-source').forEach(function(panel) {
+					panel.style.display = (panel.dataset.source === chosen) ? '' : 'none';
+				});
+			};
+			shSource.addEventListener('change', apply);
+			apply();
 		}
 	});
 

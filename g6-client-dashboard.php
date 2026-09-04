@@ -73,6 +73,7 @@ require_once G6_DASHBOARD_DIR . 'includes/config.php';
 require_once G6_DASHBOARD_DIR . 'includes/icons.php';
 require_once G6_DASHBOARD_DIR . 'includes/gmb.php';
 require_once G6_DASHBOARD_DIR . 'includes/airtable.php';
+require_once G6_DASHBOARD_DIR . 'includes/g6-api.php';
 require_once G6_DASHBOARD_DIR . 'includes/dashboard.php';
 require_once G6_DASHBOARD_DIR . 'includes/ajax.php';
 require_once G6_DASHBOARD_DIR . 'includes/settings.php';

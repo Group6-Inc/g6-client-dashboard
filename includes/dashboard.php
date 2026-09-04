@@ -444,13 +444,24 @@ function g6_render_dashboard(): void {
 	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff',     'id' => $tracking['x_pixel_id'] ];
 	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff',     'id' => $tracking['clarity_project_id'] ];
 
-	// ── Support Hours (Airtable) ──
-	$_sh_enabled   = ! empty( $cfg['support_hours_enabled'] );
-	$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
-	$_sh_api_key   = $cfg['support_hours_api_key']   ?? '';
-	$_sh_data      = ( $_sh_enabled && $_sh_record_id && $_sh_api_key )
-		? g6_airtable_get_data( $_sh_record_id, $_sh_api_key )
-		: false;
+	// ── Support Hours ──
+	// Two sources, one widget. Both fetchers return the same array —
+	// [ active, balance_hours, total_hours, fetched_at ] — so everything
+	// below this block is the same code it always was.
+	$_sh_enabled = ! empty( $cfg['support_hours_enabled'] );
+	$_sh_source  = g6_support_hours_source( $cfg );
+	$_sh_data    = false;
+
+	if ( $_sh_enabled && 'portal' === $_sh_source ) {
+		$_sh_data = g6_api_get_support_hours( $cfg['support_hours_portal_token'] ?? '' );
+	} elseif ( $_sh_enabled ) {
+		$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
+		$_sh_api_key   = $cfg['support_hours_api_key'] ?? '';
+		$_sh_data      = ( $_sh_record_id && $_sh_api_key )
+			? g6_airtable_get_data( $_sh_record_id, $_sh_api_key )
+			: false;
+	}
+
 	$_show_sh = $_sh_enabled && is_array( $_sh_data );
 
 	if ( $_show_sh && ! empty( $_sh_data['active'] ) ) {
