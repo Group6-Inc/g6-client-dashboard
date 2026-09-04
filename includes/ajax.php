@@ -15,7 +15,12 @@ add_action( 'wp_ajax_g6_contact_submit', 'g6_handle_contact_submit' );
  * Persist a rolling log of Zendesk ticket-creation failures/suspensions so
  * they're readable in Settings → Plugin without needing server log access.
  */
-function g6_log_zendesk_issue( string $client_name, string $reason, int $code, string $response_body ): void {
+/**
+ * One log for contact-form failures, whichever destination the form was
+ * pointed at. The option key still says zendesk on purpose: renaming it
+ * would orphan every entry already written on every site.
+ */
+function g6_log_contact_failure( string $client_name, string $reason, int $code, string $response_body ): void {
 	$log = get_option( 'g6_zendesk_failure_log', [] );
 	if ( ! is_array( $log ) ) {
 		$log = [];
@@ -76,9 +81,9 @@ function g6_handle_contact_submit(): void {
 				esc_html( $cfg['client_name'] ),
 				$result->get_error_message()
 			) );
-			g6_log_zendesk_issue( $cfg['client_name'], 'Portal: ' . $result->get_error_message(), 0, '' );
+			g6_log_contact_failure( $cfg['client_name'], 'Portal: ' . $result->get_error_message(), 0, '' );
 		} else {
-			g6_log_zendesk_issue( $cfg['client_name'], 'Portal: no site token configured', 0, '' );
+			g6_log_contact_failure( $cfg['client_name'], 'Portal: no site token configured', 0, '' );
 		}
 
 		// Deliberately does NOT try Zendesk after the portal fails. A site
@@ -162,14 +167,14 @@ function g6_handle_contact_submit(): void {
 			// isn't always practical to reach.
 			$reason = $is_suspended ? 'Ticket suspended (unverified requester email)' : 'Ticket creation failed';
 			error_log( sprintf( '[G6 Dashboard] Zendesk %s (HTTP %d) for %s: %s', $reason, $code, esc_html( $cfg['client_name'] ), $response_body ) );
-			g6_log_zendesk_issue( $cfg['client_name'], $reason, $code, $response_body );
+			g6_log_contact_failure( $cfg['client_name'], $reason, $code, $response_body );
 		} else {
 			error_log( sprintf(
 				'[G6 Dashboard] Zendesk request errored for %s: %s',
 				esc_html( $cfg['client_name'] ),
 				$response->get_error_message()
 			) );
-			g6_log_zendesk_issue( $cfg['client_name'], 'Request errored', 0, $response->get_error_message() );
+			g6_log_contact_failure( $cfg['client_name'], 'Request errored', 0, $response->get_error_message() );
 		}
 		// Fall through to email if Zendesk fails or suspends the ticket.
 	}

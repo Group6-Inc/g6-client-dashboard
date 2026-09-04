@@ -1265,7 +1265,7 @@ function g6_settings_page_render(): void {
 					<?php echo wp_kses_post( $_changelog_html ); ?>
 				</div>
 
-				<h2 class="title" style="margin-top:28px;">Zendesk Failure Log</h2>
+				<h2 class="title" style="margin-top:28px;">Contact Form Failure Log</h2>
 				<p class="description">Recent failures from the dashboard's contact form, whichever destination it was set to — a message that hit one of these still went out via the email fallback.</p>
 				<?php
 				$_zendesk_log = get_option( 'g6_zendesk_failure_log', [] );
