@@ -82,6 +82,19 @@ function g6_handle_contact_submit(): void {
 				$result->get_error_message()
 			) );
 			g6_log_contact_failure( $cfg['client_name'], 'Portal: ' . $result->get_error_message(), 0, '' );
+
+			// The portal refused this particular submission and said why,
+			// in a sentence meant for the person reading it. Show that
+			// rather than burying it in a log and answering "could not
+			// send message", which tells them nothing they can act on.
+			//
+			// No email fallback here on purpose: the fallback is for when
+			// we cannot reach the portal, and emailing a message the
+			// portal has already told us is misaddressed just moves the
+			// confusion into somebody's inbox.
+			if ( 'g6_api_rejected' === $result->get_error_code() ) {
+				wp_send_json_error( [ 'message' => $result->get_error_message() ] );
+			}
 		} else {
 			g6_log_contact_failure( $cfg['client_name'], 'Portal: no site token configured', 0, '' );
 		}
@@ -210,8 +223,13 @@ function g6_handle_contact_submit(): void {
 	if ( $sent ) {
 		wp_send_json_success( 'Email sent.' );
 	} else {
+		// Everything has failed, including this site's own mail. Say that
+		// plainly — "could not send message" reads like the form is
+		// broken, when the useful thing to know is that nothing got
+		// through and the address to use instead.
 		wp_send_json_error( [
-			'message' => 'Could not send message. Please email ' . $cfg['agency_rep_email'] . ' directly.',
+			'message' => 'We could not get your message through just now. Please email '
+				. $cfg['agency_rep_email'] . ' directly and we will pick it up there.',
 		] );
 	}
 }

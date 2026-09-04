@@ -191,6 +191,25 @@ $sent = $GLOBALS['http']['calls'][0]['args']['body'];
 is('category sent when chosen', $sent['category'], 'bug_report');
 is('subject is the typed one, not the category', $sent['subject'], 'Slider is broken');
 
+// ── 12. A refusal and an outage are different things ─────────────────
+// The caller shows a refusal to the person and falls back to email on an
+// outage, so conflating them either hides the reason or emails a message
+// the portal has already said is misaddressed.
+$GLOBALS['http'] = ['code' => 422, 'calls' => [],
+    'body' => json_encode(['message' => 'That is a Group6 staff account, so it has no client to file this under.'])];
+$err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
+is('422 is a rejection', $err->code, 'g6_api_rejected');
+is('the portal\'s own sentence survives', $err->get_error_message(),
+   'That is a Group6 staff account, so it has no client to file this under.');
+
+$GLOBALS['http'] = ['code' => 500, 'body' => 'boom', 'calls' => []];
+$err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
+is('500 is not a rejection', $err->code, 'g6_api_submit');
+
+$GLOBALS['http'] = ['code' => 401, 'body' => '{}', 'calls' => []];
+$err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
+is('401 is a rejection too', $err->code, 'g6_api_rejected');
+
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
     printf("FAIL %d PHP warning(s)/notice(s) emitted — see above\n", $GLOBALS['php_diagnostics']);

@@ -263,7 +263,16 @@ function g6_api_submit_ticket( string $token, array $fields ): array|WP_Error {
 		$message = is_array( $body ) && ! empty( $body['message'] )
 			? $body['message']
 			: 'Could not submit the ticket. Please try again.';
-		return new WP_Error( 'g6_api_submit', $message );
+
+		// A 4xx is the portal saying THIS SUBMISSION is wrong — the wrong
+		// account, usually — and it comes with a sentence written for the
+		// person who filled the form in. A 5xx or a timeout is the portal
+		// being unreachable, which is nobody at this end's fault and is
+		// what the email fallback exists for. The caller needs to tell
+		// them apart, so they get different codes.
+		$code_name = ( $code >= 400 && $code < 500 ) ? 'g6_api_rejected' : 'g6_api_submit';
+
+		return new WP_Error( $code_name, $message );
 	}
 
 	// a new ticket changes the counts the dashboard shows
