@@ -18,6 +18,18 @@
  *     on every single admin page load.
  */
 
+// Any warning or notice is a failure. A foreach over a malformed API
+// response only warns — it does not stop — so without this a missing
+// guard passes every assertion while writing to the client's error log
+// on every dashboard load. That exact sabotage went undetected until
+// this was added.
+set_error_handler(function (int $no, string $msg, string $file, int $line) {
+    fwrite(STDERR, sprintf("PHP diagnostic: %s (%s:%d)\n", $msg, basename($file), $line));
+    $GLOBALS['php_diagnostics'] = ($GLOBALS['php_diagnostics'] ?? 0) + 1;
+    return true;
+});
+$GLOBALS['php_diagnostics'] = 0;
+
 // Minimal WordPress stand-in, enough to exercise includes/g6-api.php.
 define('ABSPATH', '/tmp');
 define('HOUR_IN_SECONDS', 3600);
@@ -138,6 +150,51 @@ $sent = $GLOBALS['http']['calls'][0]['args']['body'];
 is('no category is sent', array_key_exists('category', $sent), false);
 is('the chosen topic survives as the subject', $sent['subject'], 'Hosting-related issues');
 is('the wp user identifies the sender', $sent['email'], 'jane@acme.test');
+
+// ── 10. Categories come from the portal, not from this plugin ────────
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['categories' => [
+    ['slug' => 'website_update', 'name' => 'Website Update'],
+    ['slug' => 'seo',            'name' => 'SEO'],
+]])];
+is('slug => name, in the order given',
+   g6_api_get_ticket_categories('tok'),
+   ['website_update' => 'Website Update', 'seo' => 'SEO']);
+
+// A rename in the portal reaches the form with no plugin release.
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['categories' => [
+    ['slug' => 'bug_report', 'name' => 'Something Is Broken'],
+]])];
+is('a rename comes through', g6_api_get_ticket_categories('tok'), ['bug_report' => 'Something Is Broken']);
+
+// Unreachable or malformed must not throw — the form falls back.
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 500, 'body' => 'nope', 'calls' => []];
+is('portal down => empty list, no error', g6_api_get_ticket_categories('tok'), []);
+
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['categories' => 'not-an-array'])];
+is('garbage => empty list', g6_api_get_ticket_categories('tok'), []);
+
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['categories' => [
+    ['slug' => 'ok', 'name' => 'Fine'], ['name' => 'No slug'], ['slug' => 'no-name'],
+]])];
+is('half-built rows are dropped', g6_api_get_ticket_categories('tok'), ['ok' => 'Fine']);
+
+// ── 11. A chosen category rides along with the submission ────────────
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 201, 'body' => '{"id":9}', 'calls' => []];
+g6_api_submit_ticket('tok', ['subject' => 'Slider is broken', 'body' => 'help', 'category' => 'bug_report']);
+$sent = $GLOBALS['http']['calls'][0]['args']['body'];
+is('category sent when chosen', $sent['category'], 'bug_report');
+is('subject is the typed one, not the category', $sent['subject'], 'Slider is broken');
+
+if ($GLOBALS['php_diagnostics'] > 0) {
+    $fail++;
+    printf("FAIL %d PHP warning(s)/notice(s) emitted — see above\n", $GLOBALS['php_diagnostics']);
+}
 
 printf("\n%d passed, %d failed\n", $pass, $fail);
 exit($fail ? 1 : 0);

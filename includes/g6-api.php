@@ -177,6 +177,34 @@ function g6_api_get_projects( string $token ): array|false {
 	return g6_api_get( 'projects', $token );
 }
 
+/**
+ * The categories a ticket may be filed under, as [ slug => name ].
+ *
+ * Fetched rather than hardcoded: staff rename, reorder and hide these in
+ * the portal, and a list baked into the plugin would mean a release to
+ * every site every time. Returns [] when unconfigured or unreachable,
+ * and the form falls back to its own list rather than showing nothing.
+ *
+ * @return array<string, string>
+ */
+function g6_api_get_ticket_categories( string $token ): array {
+	$data = g6_api_get( 'ticket-categories', $token );
+
+	if ( ! is_array( $data ) || empty( $data['categories'] ) || ! is_array( $data['categories'] ) ) {
+		return [];
+	}
+
+	$out = [];
+
+	foreach ( $data['categories'] as $row ) {
+		if ( ! empty( $row['slug'] ) && ! empty( $row['name'] ) ) {
+			$out[ (string) $row['slug'] ] = (string) $row['name'];
+		}
+	}
+
+	return $out;
+}
+
 /** Open ticket count and recent tickets. @return array|false */
 function g6_api_get_tickets( string $token ): array|false {
 	return g6_api_get( 'tickets', $token );
@@ -258,7 +286,7 @@ function g6_api_clear_cache( string $token, ?array $cfg = null ): void {
 		return;
 	}
 
-	foreach ( [ 'support-hours', 'projects', 'tickets' ] as $endpoint ) {
+	foreach ( [ 'support-hours', 'projects', 'tickets', 'ticket-categories' ] as $endpoint ) {
 		delete_transient( g6_api_transient_key( $endpoint, $token, $cfg ) );
 	}
 }

@@ -35,8 +35,12 @@ function g6_handle_contact_submit(): void {
 
 	$cfg     = g6_get_client_config();
 	$user    = wp_get_current_user();
-	$subject = sanitize_text_field( $_POST['subject'] ?? '' );
-	$message = sanitize_textarea_field( $_POST['message'] ?? '' );
+	$subject  = sanitize_text_field( $_POST['subject'] ?? '' );
+	$message  = sanitize_textarea_field( $_POST['message'] ?? '' );
+	// Only the portal form sends this, and it is a slug the portal itself
+	// handed us — validated again on the way in, so a forged one is
+	// refused rather than filed somewhere arbitrary.
+	$category = sanitize_key( $_POST['category'] ?? '' );
 
 	if ( empty( $subject ) || empty( $message ) ) {
 		wp_send_json_error( [ 'message' => 'Please fill in all fields.' ] );
@@ -51,15 +55,15 @@ function g6_handle_contact_submit(): void {
 		$portal_token = g6_portal_token( $cfg );
 
 		if ( $portal_token ) {
-			// No category is sent on purpose. The portal's categories and
-			// this form's dropdown do not line up — the dropdown mirrors
-			// Zendesk's issue-type field, in prose — so anything sent
-			// would be guesswork or a 422. The portal files it under its
-			// default category, and the chosen topic is preserved as the
-			// subject where a human reads it.
+			// The category is a slug the portal gave this form in the
+			// first place, so it round-trips. Empty when the categories
+			// could not be fetched and the form fell back to its Zendesk
+			// shape — the portal then applies its own default rather than
+			// this plugin guessing at one.
 			$result = g6_api_submit_ticket( $portal_token, [
 				'subject'  => $subject,
 				'body'     => $message,
+				'category' => $category,
 				'site_url' => home_url(),
 			] );
 
