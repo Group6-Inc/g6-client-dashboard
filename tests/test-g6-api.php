@@ -222,6 +222,40 @@ $GLOBALS['http'] = ['code' => 429, 'body' => '{}', 'calls' => []];
 $err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
 is('rate limiting is an outage too', $err->code, 'g6_api_submit');
 
+// ── 13. Only the projects still going belong on a dashboard ──────────
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['projects' => [
+    ['name' => 'Site redesign', 'launched_on' => null,         'steps_done' => 4, 'steps_total' => 7],
+    ['name' => 'Old build',     'launched_on' => '2025-11-02',  'steps_done' => 9, 'steps_total' => 9],
+]])];
+$live = g6_api_get_live_projects('tok');
+is('launched projects are left off', count($live), 1);
+is('the live one is kept', $live[0]['name'], 'Site redesign');
+
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['projects' => [
+    ['name' => 'Done', 'launched_on' => '2026-01-01'],
+]])];
+is('nothing live => empty, not false', g6_api_get_live_projects('tok'), []);
+
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 500, 'body' => 'boom', 'calls' => []];
+is('portal down => empty, not false', g6_api_get_live_projects('tok'), []);
+
+$GLOBALS['t'] = [];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['projects' => 'nonsense'])];
+is('garbage => empty', g6_api_get_live_projects('tok'), []);
+
+// ── 14. The dashboard template renders no template syntax ────────────
+// A Blade comment written into a WordPress template does not get
+// compiled away — it prints, in full, on a client's dashboard. This
+// plugin is plain PHP, and the habit of the other repo is one keystroke
+// away at any time.
+$tpl = file_get_contents(__DIR__ . '/../includes/dashboard.php');
+is('no Blade comments in the template', str_contains($tpl, '{{--'), false);
+is('no Blade echoes in the template', (bool) preg_match('/\{\{\s*\$/', $tpl), false);
+is('no Blade directives in the template', (bool) preg_match('/^\s*@(if|foreach|endif|php)\b/m', $tpl), false);
+
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
     printf("FAIL %d PHP warning(s)/notice(s) emitted — see above\n", $GLOBALS['php_diagnostics']);

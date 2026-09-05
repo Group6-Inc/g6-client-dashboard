@@ -166,6 +166,10 @@ function g6_default_config(): array {
 			'services' => true,
 			'contact'  => true,
 			'video'    => false,
+			// Off until somebody turns it on. Project status is
+			// maintained by hand, and a stale progress bar on a client's
+			// dashboard is worse than no progress bar.
+			'projects' => false,
 		],
 
 		// Featured video

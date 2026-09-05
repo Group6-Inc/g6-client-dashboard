@@ -154,6 +154,7 @@ function g6_settings_handle_save( array &$config ): void {
 		'reviews'  => isset( $_POST['widget_reviews'] ),
 		'services' => isset( $_POST['widget_services'] ),
 		'contact'  => isset( $_POST['widget_contact'] ),
+		'projects' => isset( $_POST['widget_projects'] ),
 		'video'    => isset( $_POST['widget_video'] ),
 	];
 
@@ -592,6 +593,7 @@ function g6_settings_page_render(): void {
 					'video'    => [ 'label' => 'Featured Video',            'icon' => 'play-circle' ],
 					'reviews'  => [ 'label' => 'Reputation Snapshot',       'icon' => 'star' ],
 					'contact'  => [ 'label' => 'Get in Touch',              'icon' => 'message-circle' ],
+					'projects' => [ 'label' => 'Project Status',            'icon' => 'trending-up' ],
 				];
 				?>
 
@@ -851,6 +853,37 @@ function g6_settings_page_render(): void {
 					</div>
 
 					<!-- Contact -->
+					<?php $_pj_token = g6_portal_token( $cfg ); ?>
+					<div class="g6w-card<?php echo empty( $cfg['widgets']['projects'] ) ? ' g6w-card--disabled' : ''; ?>" data-widget="projects">
+						<div class="g6w-card__header">
+							<div class="g6w-card__meta">
+								<div class="g6w-card__icon"><?php echo g6_icon( 'trending-up', 20 ); ?></div>
+								<div>
+									<h3 class="g6w-card__title">Project Status</h3>
+									<p class="g6w-card__desc">Where the client's project has got to, read from the Group6 portal.</p>
+								</div>
+							</div>
+						</div>
+						<div class="g6w-card__settings">
+							<p class="description">
+								<?php if ( ! $_pj_token ) : ?>
+									<span style="color:#d63638;"><strong>No portal token.</strong> Add one under
+									<strong>Group6 Portal</strong> on the Dashboard tab — this widget has no other source.</span>
+								<?php else : ?>
+									Shows each project that has not launched: its stage, how many steps are
+									done, the date it is aimed at, and what happens next. Nothing appears if
+									there are no live projects, so it is safe to leave on.
+								<?php endif; ?>
+							</p>
+							<p class="description" style="margin-top:6px;">
+								<strong>Only worth turning on if the status is kept current.</strong> It is
+								maintained by hand in the portal, and a stale progress bar tells a client
+								something false with confidence. The card shows how long ago it was updated
+								for that reason.
+							</p>
+						</div>
+					</div>
+
 					<?php
 					$_tk_dest     = g6_tickets_destination( $cfg );
 					$_tk_portal   = ( 'portal' === $_tk_dest );

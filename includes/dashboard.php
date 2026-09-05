@@ -158,6 +158,24 @@ function g6_get_dashboard_css(): string {
 
 	/* ── Section titles ── */
 	.g6-dashboard__section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+	/* Project status. Rows rather than a grid: one project is the normal
+	   case and two is the most anybody has, so a grid would leave a hole. */
+	.g6-project { padding: 18px 0; border-bottom: 1px solid var(--g6-neutral-200); }
+	.g6-project:last-child { border-bottom: 0; padding-bottom: 0; }
+	.g6-project:first-of-type { padding-top: 4px; }
+	.g6-project__name { font-family: var(--g6-font-heading); font-size: 17px; font-weight: 600; color: var(--g6-neutral-900); margin: 0 0 2px; }
+	.g6-project__stage { font-size: 13.5px; color: var(--g6-neutral-500); margin: 0; }
+	.g6-project__steps { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+	.g6-project__dots { display: flex; gap: 4px; }
+	.g6-project__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--g6-neutral-200); }
+	.g6-project__dot.is-done { background: var(--g6-primary); }
+	.g6-project__count { font-size: 12.5px; color: var(--g6-neutral-500); }
+	.g6-project__next { margin-top: 14px; padding: 12px 14px; background: var(--g6-primary-light); border-radius: 8px; }
+	.g6-project__next-label { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g6-primary-dark); margin: 0 0 4px; font-weight: 600; }
+	.g6-project__next-text { font-size: 14px; line-height: 1.55; color: var(--g6-neutral-900); margin: 0; }
+	/* The age is the honesty of the card — see the note where it is rendered. */
+	.g6-project__updated { font-size: 12px; color: var(--g6-neutral-500); margin: 10px 0 0; }
+
 	.g6-dashboard__section-title { font-family: var(--g6-font-heading); font-size: 18px; font-weight: 600; color: var(--g6-neutral-900); margin: 0; display: flex; align-items: center; gap: 8px; }
 	.g6-dashboard__section-title svg { color: var(--g6-primary); }
 	.g6-dashboard__section-badge { font-size: 11px; font-weight: 600; background: var(--g6-primary-light); color: var(--g6-primary); padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -579,6 +597,78 @@ function g6_render_dashboard(): void {
 		<!-- Main -->
 		<div class="g6-dashboard__main">
 		<div class="g6-dashboard__grid">
+
+		<!-- Project Status -->
+		<?php
+		// The portal is the only source for this — there is no Airtable
+		// equivalent — so it needs a token whatever the Support Hours
+		// setting says.
+		$_pj = ( $cfg['widgets']['projects'] ?? false ) && function_exists( 'g6_api_get_live_projects' )
+			? g6_api_get_live_projects( g6_portal_token( $cfg ) )
+			: [];
+		?>
+		<?php if ( $_pj ) : ?>
+		<div class="g6-card g6-card--full">
+			<div class="g6-dashboard__section-header">
+				<h2 class="g6-dashboard__section-title">
+					<?php echo g6_icon( 'trending-up', 20 ); ?>
+					<?php echo count( $_pj ) === 1 ? 'Your project' : 'Your projects'; ?>
+				</h2>
+			</div>
+
+			<?php foreach ( $_pj as $_p ) : ?>
+				<?php
+				$_total   = max( 0, (int) ( $_p['steps_total'] ?? 0 ) );
+				$_done    = min( $_total, max( 0, (int) ( $_p['steps_done'] ?? 0 ) ) );
+				$_target  = ! empty( $_p['target_on'] ) ? strtotime( $_p['target_on'] ) : null;
+				$_updated = ! empty( $_p['updated_at'] ) ? strtotime( $_p['updated_at'] ) : null;
+				?>
+				<div class="g6-project">
+					<div class="g6-project__head">
+						<p class="g6-project__name"><?php echo esc_html( $_p['name'] ?? 'Project' ); ?></p>
+						<p class="g6-project__stage">
+							<?php echo esc_html( $_p['status_label'] ?? '' ); ?>
+							<?php if ( $_target ) : ?>
+								&middot; aiming for <?php echo esc_html( date_i18n( 'j F Y', $_target ) ); ?>
+							<?php endif; ?>
+						</p>
+					</div>
+
+					<?php if ( $_total > 0 ) : ?>
+						<div class="g6-project__steps">
+							<div class="g6-project__dots" role="img"
+								 aria-label="<?php echo esc_attr( sprintf( '%d of %d steps done', $_done, $_total ) ); ?>">
+								<?php for ( $i = 0; $i < $_total; $i++ ) : ?>
+									<span class="g6-project__dot<?php echo $i < $_done ? ' is-done' : ''; ?>"></span>
+								<?php endfor; ?>
+							</div>
+							<span class="g6-project__count">
+								<?php echo (int) $_done; ?> of <?php echo (int) $_total; ?> steps done
+							</span>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( ! empty( $_p['next_note'] ) ) : ?>
+						<div class="g6-project__next">
+							<p class="g6-project__next-label">What&rsquo;s next</p>
+							<p class="g6-project__next-text"><?php echo esc_html( $_p['next_note'] ); ?></p>
+						</div>
+					<?php endif; ?>
+
+					<?php if ( $_updated ) : ?>
+						<?php
+						// Not decoration: the status is kept by hand, so a
+						// card that cannot show its age states a stale
+						// figure with the same confidence as a fresh one.
+						?>
+						<p class="g6-project__updated">
+							Updated <?php echo esc_html( human_time_diff( $_updated, current_time( 'timestamp' ) ) ); ?> ago
+						</p>
+					<?php endif; ?>
+				</div>
+			<?php endforeach; ?>
+		</div>
+		<?php endif; ?>
 
 		<!-- How-to Guides -->
 		<?php if ( $cfg['widgets']['guides'] ?? true ) : ?>

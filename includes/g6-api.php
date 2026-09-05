@@ -178,6 +178,34 @@ function g6_api_get_projects( string $token ): array|false {
 }
 
 /**
+ * The projects worth putting on a dashboard: the ones still going.
+ *
+ * A launched project sitting there forever is clutter, and "Launched"
+ * tells the client nothing they do not already know. Returns [] rather
+ * than false when there is nothing to show, so the caller has one empty
+ * case instead of two.
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function g6_api_get_live_projects( string $token ): array {
+	$data = g6_api_get_projects( $token );
+
+	if ( ! is_array( $data ) || empty( $data['projects'] ) || ! is_array( $data['projects'] ) ) {
+		return [];
+	}
+
+	$live = [];
+
+	foreach ( $data['projects'] as $project ) {
+		if ( is_array( $project ) && empty( $project['launched_on'] ) ) {
+			$live[] = $project;
+		}
+	}
+
+	return $live;
+}
+
+/**
  * The categories a ticket may be filed under, as [ slug => name ].
  *
  * Fetched rather than hardcoded: staff rename, reorder and hide these in
