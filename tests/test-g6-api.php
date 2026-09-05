@@ -206,9 +206,21 @@ $GLOBALS['http'] = ['code' => 500, 'body' => 'boom', 'calls' => []];
 $err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
 is('500 is not a rejection', $err->code, 'g6_api_submit');
 
-$GLOBALS['http'] = ['code' => 401, 'body' => '{}', 'calls' => []];
+// A revoked token answers exactly this. It is OUR problem, not the
+// client's: showing them "Unauthenticated." while silently not sending
+// their message is the worst of both, so it falls through to email like
+// any other outage.
+$GLOBALS['http'] = ['code' => 401, 'calls' => [], 'body' => json_encode(['message' => 'Unauthenticated.'])];
 $err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
-is('401 is a rejection too', $err->code, 'g6_api_rejected');
+is('a revoked token is an outage, not a rejection', $err->code, 'g6_api_submit');
+
+$GLOBALS['http'] = ['code' => 403, 'body' => '{}', 'calls' => []];
+$err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
+is('a scope failure is an outage too', $err->code, 'g6_api_submit');
+
+$GLOBALS['http'] = ['code' => 429, 'body' => '{}', 'calls' => []];
+$err = g6_api_submit_ticket('tok', ['subject' => 'x', 'body' => 'y']);
+is('rate limiting is an outage too', $err->code, 'g6_api_submit');
 
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;

@@ -861,13 +861,20 @@ function g6_render_dashboard(): void {
 				$_c_portal     = function_exists( 'g6_tickets_destination' ) && 'portal' === g6_tickets_destination( $cfg );
 				$_c_categories = $_c_portal ? g6_api_get_ticket_categories( g6_portal_token( $cfg ) ) : [];
 
-				// If the portal cannot be reached we still render a usable
-				// form: the request falls back to email either way, and a
-				// form that refuses to draw helps nobody.
-				$_c_portal_ready = $_c_portal && ! empty( $_c_categories );
+				// The SHAPE follows the setting, not the fetch.
+				//
+				// A site set to the portal has been migrated, and must not
+				// start showing Zendesk's topics again because a token was
+				// revoked or the portal was briefly down — those requests
+				// fall through to email, where a typed subject is the only
+				// thing making them readable. Only the topic list depends
+				// on the fetch succeeding; without it the portal applies
+				// its own default category.
+				$_c_topics = $_c_portal && ! empty( $_c_categories );
 				?>
-				<div class="g6-contact-form" id="g6-contact-form" data-mode="<?php echo $_c_portal_ready ? 'portal' : 'legacy'; ?>">
-					<?php if ( $_c_portal_ready ) : ?>
+				<div class="g6-contact-form" id="g6-contact-form" data-mode="<?php echo $_c_portal ? 'portal' : 'legacy'; ?>">
+					<?php if ( $_c_portal ) : ?>
+					<?php if ( $_c_topics ) : ?>
 					<div class="g6-contact-form__field">
 						<label class="g6-contact-form__label" for="g6-category">Topic</label>
 						<select class="g6-contact-form__select" id="g6-category" name="category">
@@ -877,6 +884,7 @@ function g6_render_dashboard(): void {
 							<?php endforeach; ?>
 						</select>
 					</div>
+					<?php endif; ?>
 					<div class="g6-contact-form__field">
 						<label class="g6-contact-form__label" for="g6-subject">Subject</label>
 						<input class="g6-contact-form__select" type="text" id="g6-subject" name="subject"
@@ -953,6 +961,13 @@ function g6_render_dashboard(): void {
 
 		// The subject is required either way — the portal's API requires
 		// it, and on the Zendesk form the dropdown IS the subject.
+		//
+		// Which wording to use follows the form's mode, not whether a
+		// topic dropdown happens to be present: the portal form renders
+		// without one when the topic list could not be fetched, and
+		// "please SELECT a subject" beside a text box is nonsense.
+		var portalForm = document.getElementById('g6-contact-form').dataset.mode === 'portal';
+
 		if ( categoryEl && ! category ) {
 			errorEl.textContent   = 'Please choose a topic.';
 			errorEl.style.display = 'block';
@@ -960,7 +975,7 @@ function g6_render_dashboard(): void {
 		}
 
 		if ( ! subject || ! message ) {
-			errorEl.textContent    = categoryEl
+			errorEl.textContent    = portalForm
 				? 'Please add a subject and a message.'
 				: 'Please select a subject and enter a message.';
 			errorEl.style.display  = 'block';
