@@ -22,6 +22,18 @@ jobs:
         id: version
         run: |
           BASE=$(grep "define.*G6_DASHBOARD_VERSION" g6-client-dashboard.php | grep -oP "[\d.]+" | tail -1)
+
+          # A beta is FOUR parts: the released version plus a build
+          # number, e.g. 0.5.0.1. Three parts is a production version, and
+          # shipping one from this branch produces a build that sorts
+          # below the betas that came before it, so WordPress stops
+          # offering the update and the branch looks broken. See
+          # VERSIONING.md.
+          if ! [[ "$BASE" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::G6_DASHBOARD_VERSION is '$BASE'. A beta needs four parts, e.g. 0.5.0.1 — see VERSIONING.md."
+            exit 1
+          fi
+
           echo "VERSION=${BASE}-beta" >> $GITHUB_OUTPUT
           echo "BASE_VERSION=${BASE}" >> $GITHUB_OUTPUT
 

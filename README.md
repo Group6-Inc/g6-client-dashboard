@@ -182,3 +182,7 @@ g6-client-dashboard/
 - Tracking scripts inject into `wp_head` (frontend only) — never into `admin_head`.
 - All AJAX handlers verify nonce + `manage_options` capability.
 - All output is escaped (`esc_html`, `esc_attr`, `esc_url`, `esc_js`).
+
+## Versioning
+
+Three parts is a release, four is a beta build — see [VERSIONING.md](VERSIONING.md).
