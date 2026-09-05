@@ -444,13 +444,24 @@ function g6_render_dashboard(): void {
 	if ( ! empty( $tracking['x_pixel_id'] ) )         $tracking_pills[] = [ 'badge' => 'X',    'label' => 'X Pixel',               'bg' => '#14171a', 'color' => '#fff',     'id' => $tracking['x_pixel_id'] ];
 	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff',     'id' => $tracking['clarity_project_id'] ];
 
-	// ── Support Hours (Airtable) ──
-	$_sh_enabled   = ! empty( $cfg['support_hours_enabled'] );
-	$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
-	$_sh_api_key   = $cfg['support_hours_api_key']   ?? '';
-	$_sh_data      = ( $_sh_enabled && $_sh_record_id && $_sh_api_key )
-		? g6_airtable_get_data( $_sh_record_id, $_sh_api_key )
-		: false;
+	// ── Support Hours ──
+	// Two sources, one widget. Both fetchers return the same array —
+	// [ active, balance_hours, total_hours, fetched_at ] — so everything
+	// below this block is the same code it always was.
+	$_sh_enabled = ! empty( $cfg['support_hours_enabled'] );
+	$_sh_source  = g6_support_hours_source( $cfg );
+	$_sh_data    = false;
+
+	if ( $_sh_enabled && 'portal' === $_sh_source ) {
+		$_sh_data = g6_api_get_support_hours( $cfg['portal_token'] ?? '' );
+	} elseif ( $_sh_enabled ) {
+		$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
+		$_sh_api_key   = $cfg['support_hours_api_key'] ?? '';
+		$_sh_data      = ( $_sh_record_id && $_sh_api_key )
+			? g6_airtable_get_data( $_sh_record_id, $_sh_api_key )
+			: false;
+	}
+
 	$_show_sh = $_sh_enabled && is_array( $_sh_data );
 
 	if ( $_show_sh && ! empty( $_sh_data['active'] ) ) {
@@ -834,7 +845,52 @@ function g6_render_dashboard(): void {
 				<p style="font-size:14px; color:var(--g6-neutral-500); margin:0 0 18px; line-height:1.5;">
 					Have a question or need help? Submit a request and your account manager will follow up.
 				</p>
-				<div class="g6-contact-form" id="g6-contact-form">
+				<?php
+				// Two shapes for one form.
+				//
+				// Zendesk wants its issue-type field, whose options are
+				// prose and double as the ticket subject — those strings
+				// are mapped 1:1 in includes/ajax.php and must not drift.
+				//
+				// The portal has real categories, editable by staff, so
+				// the list is fetched rather than baked in; and it has a
+				// subject of its own, which is what makes a queue of
+				// tickets readable. Sending the category name as the
+				// subject would give staff twenty rows all called
+				// "Website Update".
+				$_c_portal     = function_exists( 'g6_tickets_destination' ) && 'portal' === g6_tickets_destination( $cfg );
+				$_c_categories = $_c_portal ? g6_api_get_ticket_categories( g6_portal_token( $cfg ) ) : [];
+
+				// The SHAPE follows the setting, not the fetch.
+				//
+				// A site set to the portal has been migrated, and must not
+				// start showing Zendesk's topics again because a token was
+				// revoked or the portal was briefly down — those requests
+				// fall through to email, where a typed subject is the only
+				// thing making them readable. Only the topic list depends
+				// on the fetch succeeding; without it the portal applies
+				// its own default category.
+				$_c_topics = $_c_portal && ! empty( $_c_categories );
+				?>
+				<div class="g6-contact-form" id="g6-contact-form" data-mode="<?php echo $_c_portal ? 'portal' : 'legacy'; ?>">
+					<?php if ( $_c_portal ) : ?>
+					<?php if ( $_c_topics ) : ?>
+					<div class="g6-contact-form__field">
+						<label class="g6-contact-form__label" for="g6-category">Topic</label>
+						<select class="g6-contact-form__select" id="g6-category" name="category">
+							<option value="">Choose a topic&hellip;</option>
+							<?php foreach ( $_c_categories as $_slug => $_name ) : ?>
+								<option value="<?php echo esc_attr( $_slug ); ?>"><?php echo esc_html( $_name ); ?></option>
+							<?php endforeach; ?>
+						</select>
+					</div>
+					<?php endif; ?>
+					<div class="g6-contact-form__field">
+						<label class="g6-contact-form__label" for="g6-subject">Subject</label>
+						<input class="g6-contact-form__select" type="text" id="g6-subject" name="subject"
+							maxlength="255" placeholder="A few words on what this is about">
+					</div>
+					<?php else : ?>
 					<div class="g6-contact-form__field">
 						<label class="g6-contact-form__label" for="g6-subject">Subject</label>
 						<select class="g6-contact-form__select" id="g6-subject" name="subject">
@@ -848,6 +904,7 @@ function g6_render_dashboard(): void {
 							<option value="Other - My issue is not listed">Other - My issue is not listed</option>
 						</select>
 					</div>
+					<?php endif; ?>
 					<div class="g6-contact-form__field">
 						<label class="g6-contact-form__label" for="g6-message">Message</label>
 						<textarea class="g6-contact-form__textarea" id="g6-message" name="message" placeholder="Tell us what you need&hellip;"></textarea>
@@ -892,16 +949,35 @@ function g6_render_dashboard(): void {
 
 	<script>
 	function g6SubmitContact() {
-		var subject   = document.getElementById('g6-subject').value;
+		var subject   = document.getElementById('g6-subject').value.trim();
 		var message   = document.getElementById('g6-message').value;
+		var categoryEl = document.getElementById('g6-category');
+		var category  = categoryEl ? categoryEl.value : '';
 		var errorEl   = document.getElementById('g6-contact-error');
 		var successEl = document.getElementById('g6-contact-success');
 
 		errorEl.style.display   = 'none';
 		successEl.style.display = 'none';
 
+		// The subject is required either way — the portal's API requires
+		// it, and on the Zendesk form the dropdown IS the subject.
+		//
+		// Which wording to use follows the form's mode, not whether a
+		// topic dropdown happens to be present: the portal form renders
+		// without one when the topic list could not be fetched, and
+		// "please SELECT a subject" beside a text box is nonsense.
+		var portalForm = document.getElementById('g6-contact-form').dataset.mode === 'portal';
+
+		if ( categoryEl && ! category ) {
+			errorEl.textContent   = 'Please choose a topic.';
+			errorEl.style.display = 'block';
+			return;
+		}
+
 		if ( ! subject || ! message ) {
-			errorEl.textContent    = 'Please select a subject and enter a message.';
+			errorEl.textContent    = portalForm
+				? 'Please add a subject and a message.'
+				: 'Please select a subject and enter a message.';
 			errorEl.style.display  = 'block';
 			return;
 		}
@@ -914,6 +990,7 @@ function g6_render_dashboard(): void {
 		data.append('action',    'g6_contact_submit');
 		data.append('subject',   subject);
 		data.append('message',   message);
+		if ( category ) { data.append('category', category); }
 		data.append('_wpnonce',  '<?php echo esc_js( wp_create_nonce( 'g6_contact_nonce' ) ); ?>');
 
 		fetch(ajaxurl, { method: 'POST', body: data })
@@ -923,6 +1000,7 @@ function g6_render_dashboard(): void {
 					successEl.style.display = 'flex';
 					document.getElementById('g6-subject').value = '';
 					document.getElementById('g6-message').value = '';
+					if ( categoryEl ) { categoryEl.value = ''; }
 					btn.textContent = 'Sent \u2713';
 					setTimeout(function() {
 						successEl.style.display = 'none';

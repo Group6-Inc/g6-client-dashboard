@@ -3,7 +3,7 @@
  * Plugin Name:  Group6 Client Dashboard
  * Plugin URI:   https://github.com/Group6-Inc/g6-client-dashboard
  * Description:  Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.
- * Version:      0.4.0
+ * Version:      0.5.0.1
  * Author:       Group6
  * Author URI:   https://group6inc.com
  * License:      Proprietary
@@ -25,7 +25,7 @@ if ( defined( 'G6_DASHBOARD_VERSION' ) ) {
 	return;
 }
 
-define( 'G6_DASHBOARD_VERSION',   '0.4.0' );
+define( 'G6_DASHBOARD_VERSION',   '0.5.0.1' );
 define( 'G6_DASHBOARD_FILE',      __FILE__ );
 define( 'G6_DASHBOARD_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
@@ -73,6 +73,7 @@ require_once G6_DASHBOARD_DIR . 'includes/config.php';
 require_once G6_DASHBOARD_DIR . 'includes/icons.php';
 require_once G6_DASHBOARD_DIR . 'includes/gmb.php';
 require_once G6_DASHBOARD_DIR . 'includes/airtable.php';
+require_once G6_DASHBOARD_DIR . 'includes/g6-api.php';
 require_once G6_DASHBOARD_DIR . 'includes/dashboard.php';
 require_once G6_DASHBOARD_DIR . 'includes/ajax.php';
 require_once G6_DASHBOARD_DIR . 'includes/settings.php';

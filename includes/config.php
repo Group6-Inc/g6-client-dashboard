@@ -202,10 +202,25 @@ function g6_default_config(): array {
 		'reviews_cta_text'     => '',
 		'reviews_api_key'      => '',
 
-		// Airtable Support Hours integration (dashboard sidebar).
+		// Support Hours integration (dashboard sidebar). One widget, two
+		// possible sources — Airtable as it has always worked, or the
+		// Group6 client portal. Airtable stays the default so existing
+		// sites carry on unchanged after an update.
 		'support_hours_enabled'   => false,
-		'support_hours_api_key'   => '', // Personal Access Token
+		'support_hours_source'    => 'airtable', // 'airtable' | 'portal'
+		'support_hours_api_key'   => '', // Airtable Personal Access Token
 		'support_hours_record_id' => '',
+
+		// Where the Get in Touch form files a request. Zendesk until a
+		// site is cut over; both can be true of different sites at once,
+		// which is what a parallel run looks like.
+		'tickets_destination' => 'zendesk', // 'zendesk' | 'portal'
+
+		// The Group6 portal connection. One credential, shared by every
+		// feature that reads from or writes to the portal — it is not a
+		// support-hours setting, which is why it does not live with them.
+		'portal_token' => '',
+		'portal_url'   => '', // blank = the production portal
 
 		// Developer tools.
 		'asset_manager_enabled'    => false,
