@@ -34,11 +34,16 @@ const G6_API_DEFAULT_BASE = 'https://portal.group6inc.com/api/v1';
  * mistake. Otherwise the settings field, and otherwise production.
  */
 function g6_api_base( ?array $cfg = null ): string {
+	// g6_get_client_config, not g6_get_config — the latter does not
+	// exist, and function_exists() made that silent: every call without
+	// an explicit $cfg fell back to [], so the Portal API URL setting
+	// was read when building a cache key and ignored when making the
+	// request.
 	if ( defined( 'G6_API_BASE' ) && G6_API_BASE ) {
 		return rtrim( G6_API_BASE, '/' );
 	}
 
-	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
+	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
 	$url = trim( $cfg['portal_url'] ?? '' );
 
 	return $url ? rtrim( $url, '/' ) : G6_API_DEFAULT_BASE;
@@ -132,7 +137,7 @@ function g6_api_get( string $endpoint, string $token ): array|false {
 
 /** This site's portal credential, wherever it is being used. */
 function g6_portal_token( ?array $cfg = null ): string {
-	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
+	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
 
 	return trim( $cfg['portal_token'] ?? '' );
 }
@@ -145,7 +150,7 @@ function g6_portal_token( ?array $cfg = null ): string {
  * this version has nothing saved, and must carry on doing what it did.
  */
 function g6_tickets_destination( ?array $cfg = null ): string {
-	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
+	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
 
 	return ( ( $cfg['tickets_destination'] ?? 'zendesk' ) === 'portal' ) ? 'portal' : 'zendesk';
 }
@@ -158,7 +163,7 @@ function g6_tickets_destination( ?array $cfg = null ): string {
  * on reading Airtable rather than silently going blank.
  */
 function g6_support_hours_source( ?array $cfg = null ): string {
-	$cfg = $cfg ?? ( function_exists( 'g6_get_config' ) ? g6_get_config() : [] );
+	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
 
 	return ( ( $cfg['support_hours_source'] ?? 'airtable' ) === 'portal' ) ? 'portal' : 'airtable';
 }

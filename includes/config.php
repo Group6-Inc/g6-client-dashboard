@@ -17,6 +17,25 @@ function g6_get_client_config(): array {
 	return g6_default_config();
 }
 
+/**
+ * The widgets to render, in the order this site has put them in.
+ *
+ * Derived from the saved order rather than trusted: anything saved that
+ * is not a real widget is dropped, and any widget the code has that the
+ * saved list has never heard of is appended. So adding a widget to the
+ * plugin cannot make it invisible on a site whose order was saved
+ * before it existed — which is exactly what a stored list of keys does
+ * if you let it.
+ *
+ * @return array<int, string>
+ */
+function g6_widget_order( array $cfg ): array {
+	$known = array_keys( g6_default_config()['widgets'] );
+	$saved = array_values( array_intersect( (array) ( $cfg['widget_order'] ?? [] ), $known ) );
+
+	return array_values( array_unique( array_merge( $saved, $known ) ) );
+}
+
 function g6_default_config(): array {
 	return [
 		'client_name'      => get_bloginfo( 'name' ),
@@ -170,6 +189,15 @@ function g6_default_config(): array {
 			// maintained by hand, and a stale progress bar on a client's
 			// dashboard is worse than no progress bar.
 			'projects' => false,
+		],
+
+		// The order widgets appear in on the dashboard. Guides first
+		// because it is what a client reads once and never again, and
+		// Get in Touch last because it is where they end up. A widget
+		// missing from this list still renders — at the end — so adding
+		// one to the code cannot make it disappear.
+		'widget_order' => [
+			'guides', 'projects', 'video', 'keywords', 'reviews', 'services', 'contact',
 		],
 
 		// Featured video

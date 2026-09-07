@@ -48,7 +48,7 @@ function delete_transient($k) { unset($GLOBALS['t'][$k]); return true; }
 function current_time($f) { return '2026-09-04 12:00:00'; }
 
 $GLOBALS['cfg'] = [];
-function g6_get_config() { return $GLOBALS['cfg']; }
+function g6_get_client_config() { return $GLOBALS['cfg']; }
 
 $GLOBALS['http'] = ['code' => 200, 'body' => '{}', 'calls' => []];
 function wp_remote_get($url, $args = []) {
@@ -268,6 +268,19 @@ is('handlers are bound by attribute', str_contains($set, '[name^="widget_"]'), t
 // Every widget in the nav has a toggle of the shape that selector finds.
 preg_match_all("/'([a-z]+)'\s*=> \[ 'label' =>/", $set, $m);
 is('the nav lists widgets', count($m[1]) > 0, true);
+
+// ── 16. The configured portal URL is used, not just cached against ───
+// g6_api_base() guarded on function_exists('g6_get_config'), which is
+// not the name of anything. So a site with a Portal API URL set had it
+// honoured when building the transient key and ignored when making the
+// request — it talked to production and cached the answer under the
+// staging key.
+$GLOBALS['t'] = [];
+$GLOBALS['cfg'] = ['portal_url' => 'https://staging.test/api/v1'];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['active' => true])];
+g6_api_get_support_hours('tok');
+is('the request goes where the setting says',
+   $GLOBALS['http']['calls'][0]['url'], 'https://staging.test/api/v1/support-hours');
 
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;

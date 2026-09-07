@@ -158,6 +158,15 @@ function g6_settings_handle_save( array &$config ): void {
 		'video'    => isset( $_POST['widget_video'] ),
 	];
 
+	// Order comes back as a comma-separated list of keys from the drag
+	// handler. g6_widget_order() sanitises it on the way out, so an
+	// unknown key here is dropped rather than trusted, and a widget the
+	// list has never heard of is appended rather than lost.
+	$config['widget_order'] = array_values( array_filter( array_map(
+		'sanitize_key',
+		explode( ',', (string) ( $_POST['widget_order'] ?? '' ) )
+	) ) );
+
 	// ── GMB integration ─────────────────────────────────────────────────────
 	$old_locations    = $config['reviews_locations']   ?? [];
 	$old_competitors  = $config['reviews_competitors'] ?? [];
@@ -597,11 +606,25 @@ function g6_settings_page_render(): void {
 				];
 				?>
 
+				<?php
+				// Listed in the order the dashboard will render them, so
+				// dragging here is dragging the dashboard.
+				$widget_nav_items = array_replace(
+					array_fill_keys( g6_widget_order( $cfg ), null ),
+					$widget_nav_items
+				);
+				$widget_nav_items = array_filter( $widget_nav_items );
+				?>
+
 				<div class="g6w-layout">
 
-					<aside class="g6w-nav">
+					<aside class="g6w-nav" id="g6-widget-nav">
+						<input type="hidden" name="widget_order" id="g6-widget-order"
+							   value="<?php echo esc_attr( implode( ',', array_keys( $widget_nav_items ) ) ); ?>">
 						<?php foreach ( $widget_nav_items as $w_key => $w_item ) : ?>
-						<div class="g6w-nav__item" data-scroll="<?php echo esc_attr( $w_key ); ?>">
+						<div class="g6w-nav__item" data-scroll="<?php echo esc_attr( $w_key ); ?>"
+							 data-key="<?php echo esc_attr( $w_key ); ?>" draggable="true">
+							<span class="g6w-nav__grip" aria-hidden="true">⠿</span>
 							<span class="g6w-nav__icon"><?php echo g6_icon( $w_item['icon'], 16 ); ?></span>
 							<span class="g6w-nav__label"><?php echo esc_html( $w_item['label'] ); ?></span>
 							<label class="g6w-toggle">
@@ -1598,7 +1621,10 @@ function g6_settings_page_render(): void {
 		.g6l-url-field .g6s-field__input { flex: 1; }
 		.g6-gmb-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 		.g6-gmb-row .g6s-field__input { min-width: 0; }
-	</style>
+		.g6w-nav__grip { color: #9CA3AF; cursor: grab; font-size: 13px; line-height: 1; user-select: none; }
+	.g6w-nav__item.is-dragging { opacity: .45; }
+	.g6w-nav__item:active .g6w-nav__grip { cursor: grabbing; }
+</style>
 
 	<script>
 	(function() {
@@ -1811,6 +1837,52 @@ function g6_settings_page_render(): void {
 				g6SyncWidgetSettings(key, this.checked);
 			});
 		});
+
+		// Widget nav: drag a row to reorder the dashboard.
+		//
+		// The order is written into a hidden field rather than saved as
+		// you drag: this whole page is one form with one Save, and a
+		// reorder that persisted immediately while every other change on
+		// the screen waited would be the odd one out.
+		var g6Nav = document.getElementById('g6-widget-nav');
+		var g6OrderField = document.getElementById('g6-widget-order');
+
+		if (g6Nav && g6OrderField) {
+			var dragging = null;
+
+			var syncOrder = function() {
+				g6OrderField.value = [...g6Nav.querySelectorAll('.g6w-nav__item')]
+					.map(function(row) { return row.dataset.key; })
+					.join(',');
+			};
+
+			g6Nav.querySelectorAll('.g6w-nav__item').forEach(function(row) {
+				row.addEventListener('dragstart', function() {
+					dragging = row;
+					row.classList.add('is-dragging');
+				});
+
+				row.addEventListener('dragend', function() {
+					row.classList.remove('is-dragging');
+					dragging = null;
+					syncOrder();
+				});
+
+				row.addEventListener('dragover', function(e) {
+					e.preventDefault();
+					if (!dragging || dragging === row) return;
+
+					// Insert before or after depending on which half of
+					// the row the pointer is over, so a drag downwards
+					// does not need to overshoot.
+					var box = row.getBoundingClientRect();
+					var after = (e.clientY - box.top) > (box.height / 2);
+					g6Nav.insertBefore(dragging, after ? row.nextSibling : row);
+				});
+
+				row.addEventListener('drop', function(e) { e.preventDefault(); syncOrder(); });
+			});
+		}
 
 		// Widget nav: click a row (not the toggle) to scroll to its card.
 		document.querySelectorAll('.g6w-nav__item').forEach(function(item) {
