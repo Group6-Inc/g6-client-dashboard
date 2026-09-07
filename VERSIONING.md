@@ -53,6 +53,16 @@ into the plugin file.
   from the tag, and by the beta workflow for the beta manifest. Do not
   edit it by hand.
 
+## Every beta build gets its own number
+
+The fourth part is a BUILD number, not a cycle number. Two pushes to
+`beta` are two builds and take `.1` and `.2`. Leaving it alone produces
+a zip whose version equals the one already installed, so
+`version_compare` says equal, WordPress offers nothing, and the symptom
+is a feature that looks like it never shipped — there is no error
+anywhere. The beta workflow now refuses to build a version the manifest
+is already serving.
+
 ## The mistake this is written down to prevent
 
 Comparing a beta against the number already in the plugin file rather
