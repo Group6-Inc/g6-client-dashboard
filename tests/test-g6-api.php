@@ -256,6 +256,19 @@ is('no Blade comments in the template', str_contains($tpl, '{{--'), false);
 is('no Blade echoes in the template', (bool) preg_match('/\{\{\s*\$/', $tpl), false);
 is('no Blade directives in the template', (bool) preg_match('/^\s*@(if|foreach|endif|php)\b/m', $tpl), false);
 
+// ── 15. Widget toggles need no list kept in step ─────────────────────
+// A hardcoded array of widget keys meant a new widget's card stayed
+// greyed out after its toggle was switched on, until the page was saved
+// and reloaded. The toggle worked; only the feedback was missing, which
+// is the kind of wrong that reads as "it did not save".
+$set = file_get_contents(__DIR__ . '/../includes/settings.php');
+is('no hardcoded list of widget keys', str_contains($set, 'g6WidgetSettingsKeys'), false);
+is('handlers are bound by attribute', str_contains($set, '[name^="widget_"]'), true);
+
+// Every widget in the nav has a toggle of the shape that selector finds.
+preg_match_all("/'([a-z]+)'\s*=> \[ 'label' =>/", $set, $m);
+is('the nav lists widgets', count($m[1]) > 0, true);
+
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
     printf("FAIL %d PHP warning(s)/notice(s) emitted — see above\n", $GLOBALS['php_diagnostics']);

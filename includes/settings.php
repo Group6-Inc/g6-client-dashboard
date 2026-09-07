@@ -1791,8 +1791,12 @@ function g6_settings_page_render(): void {
 	});
 
 	// ── Widget toggles → settings visibility ──────────────────────────────────
-	var g6WidgetSettingsKeys = ['guides', 'services', 'keywords', 'video', 'reviews', 'contact'];
-
+	// Derived from the toggles that are actually on the page rather than
+	// listed here. The list was hardcoded and the Project Status widget
+	// was added without it, so its card stayed greyed out until the page
+	// was saved and reloaded — the toggle worked, the feedback did not.
+	// Every widget's toggle is name="widget_<key>", so there is nothing
+	// to keep in step.
 	function g6SyncWidgetSettings(key, enabled) {
 		var el   = document.getElementById('g6-widget-settings-' + key);
 		var card = document.querySelector('.g6w-card[data-widget="' + key + '"]');
@@ -1801,9 +1805,8 @@ function g6_settings_page_render(): void {
 	}
 
 	document.addEventListener('DOMContentLoaded', function() {
-		g6WidgetSettingsKeys.forEach(function(key) {
-			var cb = document.querySelector('input[name="widget_' + key + '"]');
-			if (!cb) return;
+		document.querySelectorAll('input[type="checkbox"][name^="widget_"]').forEach(function(cb) {
+			var key = cb.name.slice('widget_'.length);
 			cb.addEventListener('change', function() {
 				g6SyncWidgetSettings(key, this.checked);
 			});
