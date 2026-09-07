@@ -75,6 +75,13 @@ function g6_dashboard_styles( string $hook ): void {
 	wp_add_inline_style( 'wp-admin', g6_get_dashboard_css() );
 }
 
+/**
+ * The dashboard CSS.
+ *
+ * Returned as a SINGLE-QUOTED string, so an apostrophe anywhere in here
+ * — including in a comment — ends the string and breaks the file. Write
+ * "the header" rather than "the header's". This has bitten once.
+ */
 function g6_get_dashboard_css(): string {
 	return '
 	/* ── Reset welcome panel chrome (admins) ── */
@@ -160,21 +167,32 @@ function g6_get_dashboard_css(): string {
 	.g6-dashboard__section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 	/* Project status. Rows rather than a grid: one project is the normal
 	   case and two is the most anybody has, so a grid would leave a hole. */
-	.g6-project { padding: 18px 0; border-bottom: 1px solid var(--g6-neutral-200); }
+	/* Spacing between projects, never above the first one. The obvious
+	   :first-of-type does not work here: the section header is a div
+	   too, so it IS the first div and the first project never matched —
+	   which left 18px of padding stacked under the 16px margin below the
+	   header, and a gap that looked like a mistake, because it was. */
+	.g6-project { padding-bottom: 18px; border-bottom: 1px solid var(--g6-neutral-200); }
+	.g6-project + .g6-project { padding-top: 18px; }
 	.g6-project:last-child { border-bottom: 0; padding-bottom: 0; }
-	.g6-project:first-of-type { padding-top: 4px; }
-	.g6-project__name { font-family: var(--g6-font-heading); font-size: 17px; font-weight: 600; color: var(--g6-neutral-900); margin: 0 0 2px; }
-	.g6-project__stage { font-size: 13.5px; color: var(--g6-neutral-500); margin: 0; }
-	.g6-project__steps { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
-	.g6-project__dots { display: flex; gap: 4px; }
-	.g6-project__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--g6-neutral-200); }
+	.g6-project__name { font-family: var(--g6-font-heading); font-size: 16px; font-weight: 600; color: var(--g6-neutral-900); margin: 0 0 3px; line-height: 1.3; }
+	.g6-project__stage { font-size: 13px; color: var(--g6-neutral-500); margin: 0; line-height: 1.45; }
+	.g6-project__steps { display: flex; align-items: center; gap: 9px; margin-top: 14px; flex-wrap: wrap; }
+	.g6-project__dots { display: flex; gap: 3px; }
+	/* Segments rather than dots: they read as a bar at a glance and stay
+	   legible at seven or eight steps, where circles start to look like
+	   a colon. */
+	.g6-project__dot { width: 16px; height: 4px; border-radius: 2px; background: var(--g6-neutral-200); }
 	.g6-project__dot.is-done { background: var(--g6-primary); }
 	.g6-project__count { font-size: 12.5px; color: var(--g6-neutral-500); }
-	.g6-project__next { margin-top: 14px; padding: 12px 14px; background: var(--g6-primary-light); border-radius: 8px; }
-	.g6-project__next-label { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g6-primary-dark); margin: 0 0 4px; font-weight: 600; }
-	.g6-project__next-text { font-size: 14px; line-height: 1.55; color: var(--g6-neutral-900); margin: 0; }
+	/* A quote, not a slab. The filled panel was the loudest thing in the
+	   card and the card is now one column wide, where a block of tint
+	   fills most of it. */
+	.g6-project__next { margin-top: 14px; padding: 2px 0 2px 12px; border-left: 2px solid var(--g6-primary); }
+	.g6-project__next-label { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--g6-primary-dark); margin: 0 0 3px; font-weight: 600; }
+	.g6-project__next-text { font-size: 13.5px; line-height: 1.5; color: var(--g6-neutral-900); margin: 0; }
 	/* The age is the honesty of the card — see the note where it is rendered. */
-	.g6-project__updated { font-size: 12px; color: var(--g6-neutral-500); margin: 10px 0 0; }
+	.g6-project__updated { font-size: 11.5px; color: #9CA3AF; margin: 12px 0 0; }
 
 	.g6-dashboard__section-title { font-family: var(--g6-font-heading); font-size: 18px; font-weight: 600; color: var(--g6-neutral-900); margin: 0; display: flex; align-items: center; gap: 8px; }
 	.g6-dashboard__section-title svg { color: var(--g6-primary); }

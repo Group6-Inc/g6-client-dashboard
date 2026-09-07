@@ -51,6 +51,17 @@ jobs:
           echo "VERSION=${BASE}-beta" >> $GITHUB_OUTPUT
           echo "BASE_VERSION=${BASE}" >> $GITHUB_OUTPUT
 
+      # Nothing ran the plugin's own checks before a build, so a syntax
+      # error or a broken assumption shipped as happily as working code.
+      # A single-quoted CSS string ended early on an apostrophe once and
+      # only a local php -l caught it.
+      - name: Lint and test
+        run: |
+          find . -name '*.php' -not -path './build/*' -print0 \
+            | xargs -0 -n1 php -l > /dev/null
+          php tests/test-g6-api.php
+          php tests/test-widget-order.php
+
       - name: Build beta zip
         run: |
           mkdir -p build

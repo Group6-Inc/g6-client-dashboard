@@ -33,6 +33,13 @@ jobs:
 
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Lint and test
+        run: |
+          find . -name '*.php' -not -path './build/*' -print0 \
+            | xargs -0 -n1 php -l > /dev/null
+          php tests/test-g6-api.php
+          php tests/test-widget-order.php
+
       - name: Build release zip
         run: |
           mkdir -p build
