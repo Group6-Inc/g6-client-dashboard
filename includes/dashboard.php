@@ -188,8 +188,8 @@ function g6_get_dashboard_css(): string {
 	/* A quote, not a slab. The filled panel was the loudest thing in the
 	   card and the card is now one column wide, where a block of tint
 	   fills most of it. */
-	.g6-project__next { margin-top: 14px; padding: 2px 0 2px 12px; border-left: 2px solid var(--g6-primary); }
-	.g6-project__next-label { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--g6-primary-dark); margin: 0 0 3px; font-weight: 600; }
+	.g6-project__next { margin-top: 16px; padding: 12px 0 12px 12px; border-left: 2px solid var(--g6-primary); }
+	.g6-project__next-label { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--g6-primary-dark); margin: 0 0 5px; line-height: 1; font-weight: 600; }
 	.g6-project__next-text { font-size: 13.5px; line-height: 1.5; color: var(--g6-neutral-900); margin: 0; }
 	/* The age is the honesty of the card — see the note where it is rendered. */
 	/* Its own line, well clear of whatever came before it. It is a
@@ -200,7 +200,7 @@ function g6_get_dashboard_css(): string {
 	   what is actually happening, which is what the portal shows and
 	   what a client asks about. */
 	.g6-project__list { list-style: none; margin: 14px 0 0; padding: 0; }
-	.g6-project__step { display: flex; align-items: baseline; gap: 9px; padding: 7px 0; border-bottom: 1px solid #F3F4F6; font-size: 13.5px; }
+	.g6-project__step { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid #F3F4F6; font-size: 13.5px; }
 	.g6-project__step:last-child { border-bottom: 0; }
 	.g6-project__tick { flex: 0 0 15px; height: 15px; border-radius: 4px; border: 1px solid #D1D5DB; font-size: 9px; line-height: 15px; text-align: center; color: #fff; }
 	.g6-project__step.is-done .g6-project__tick { background: var(--g6-neutral-900); border-color: var(--g6-neutral-900); }
