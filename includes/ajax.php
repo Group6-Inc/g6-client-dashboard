@@ -56,7 +56,11 @@ function g6_handle_contact_submit(): void {
 	// through to the email fallback. That safety net is the reason this
 	// handler is shaped the way it is, and a new destination does not get
 	// to opt out of it.
-	if ( function_exists( 'g6_tickets_destination' ) && 'portal' === g6_tickets_destination( $cfg ) ) {
+	$destination = function_exists( 'g6_tickets_destination' )
+		? g6_tickets_destination( $cfg )
+		: 'zendesk';
+
+	if ( 'portal' === $destination ) {
 		$portal_token = g6_portal_token( $cfg );
 
 		if ( $portal_token ) {
@@ -103,6 +107,15 @@ function g6_handle_contact_submit(): void {
 		// that has been cut over should not quietly start filing tickets
 		// back into the tool it was moved off — the message goes to email,
 		// where somebody sees it and acts.
+		$skip_zendesk = true;
+	}
+
+	// ── Email, for a site that files into neither ─────────────────────
+	// Not a fallback here but the destination itself: the message goes to
+	// the account manager and nothing tries to open a ticket anywhere.
+	// The block at the bottom is already exactly that, so this only has
+	// to stop Zendesk from getting there first.
+	if ( 'email' === $destination ) {
 		$skip_zendesk = true;
 	}
 

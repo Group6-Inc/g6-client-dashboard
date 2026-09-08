@@ -134,6 +134,27 @@ is('old entry is gone', get_transient(g6_api_transient_key('support-hours', 'tok
 is('no destination saved => zendesk', g6_tickets_destination([]), 'zendesk');
 is('garbage => zendesk', g6_tickets_destination(['tickets_destination' => 'nonsense']), 'zendesk');
 is('portal => portal', g6_tickets_destination(['tickets_destination' => 'portal']), 'portal');
+is('email => email', g6_tickets_destination(['tickets_destination' => 'email']), 'email');
+
+// A destination is offered, validated and saved off ONE list, so
+// retiring one is a deletion rather than three edits that must agree.
+// A value not on it falls back rather than being honoured.
+is('every offered destination is accepted',
+   array_map('g6_tickets_destination', array_map(
+       fn($v) => ['tickets_destination' => $v], array_keys(g6_ticket_destinations())
+   )),
+   array_keys(g6_ticket_destinations()));
+is('the default is one of them',
+   isset(g6_ticket_destinations()[G6_TICKETS_DEFAULT_DESTINATION]), true);
+
+$_set_src = file_get_contents(__DIR__ . '/../includes/settings.php');
+is('the dropdown is built from the list', str_contains($_set_src, 'g6_ticket_destinations()'), true);
+is('the save validates against the list',
+   str_contains($_set_src, 'isset( g6_ticket_destinations()[ $_posted_dest ] )'), true);
+
+// The email destination must not fall through Zendesk on its way out.
+$_ajax_src = file_get_contents(__DIR__ . '/../includes/ajax.php');
+is('email skips the ticket tools', str_contains($_ajax_src, "if ( 'email' === \$destination ) {"), true);
 
 // ── 8. The token is one shared connection, not a per-feature setting ──
 is('token read from the shared key', g6_portal_token(['portal_token' => ' abc ']), 'abc');
@@ -318,6 +339,18 @@ $GLOBALS['t'][g6_api_transient_key('projects', 'tok')] = ['projects' => []];
 g6_api_flush_on_upgrade();
 is('the same version leaves it alone',
    get_transient(g6_api_transient_key('projects', 'tok')), ['projects' => []]);
+
+// ── 20. The welcome-panel reset stops at our own elements ────────────
+// margin: inherit on #welcome-panel p is !important on an id, so it beat
+// every class rule in the file and handed each of our paragraphs its
+// PARENT'S margin. The label under .g6-project__next inherited that
+// element's 16px top margin, and no amount of margin: 0 on the label
+// itself could answer it.
+$_css = file_get_contents(__DIR__ . '/../includes/dashboard.php');
+is('the margin reset excludes our markup',
+   str_contains($_css, '#welcome-panel p:not([class*="g6-"]) { margin: inherit !important; }'), true);
+is('nothing resets every paragraph margin any more',
+   str_contains($_css, '#welcome-panel p  { font-size: inherit !important; line-height: inherit !important; margin: inherit !important; }'), false);
 
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;

@@ -146,16 +146,45 @@ function g6_portal_token( ?array $cfg = null ): string {
 }
 
 /**
- * Where the Get in Touch form files a request.
+ * Where a site can file a Get in Touch request, as [ value => label ].
  *
- * Anything that is not exactly 'portal' means Zendesk, for the same
- * reason the support-hours source works that way: a site updating to
- * this version has nothing saved, and must carry on doing what it did.
+ * The one list. The settings dropdown is built from it, the save
+ * validates against it, and g6_tickets_destination() falls back when a
+ * site's saved value is not in it — so retiring a destination is one
+ * deletion here, not three edits that have to agree.
+ *
+ * When Zendesk goes: drop its line, point
+ * G6_TICKETS_DEFAULT_DESTINATION at 'email', and delete the Zendesk
+ * block in includes/ajax.php. Every site still saved as 'zendesk' then
+ * falls through to that default on its next page load, with nothing to
+ * migrate — which is the reason the default is a constant and not a
+ * literal spelled out in four places.
+ *
+ * @return array<string, string>
  */
-function g6_tickets_destination( ?array $cfg = null ): string {
-	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
+function g6_ticket_destinations(): array {
+	return [
+		'zendesk' => 'Zendesk',
+		'portal'  => 'Group6 Client Portal',
+		'email'   => 'Email to the account manager',
+	];
+}
 
-	return ( ( $cfg['tickets_destination'] ?? 'zendesk' ) === 'portal' ) ? 'portal' : 'zendesk';
+/**
+ * What a site does when it has chosen nothing, or something we no
+ * longer offer. Zendesk while it still exists: a site updating to this
+ * version has nothing saved and must carry on doing what it did.
+ */
+const G6_TICKETS_DEFAULT_DESTINATION = 'zendesk';
+
+/** Where the Get in Touch form files a request. */
+function g6_tickets_destination( ?array $cfg = null ): string {
+	$cfg  = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
+	$dest = (string) ( $cfg['tickets_destination'] ?? '' );
+
+	return isset( g6_ticket_destinations()[ $dest ] )
+		? $dest
+		: G6_TICKETS_DEFAULT_DESTINATION;
 }
 
 /**

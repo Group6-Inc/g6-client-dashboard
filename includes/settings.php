@@ -116,9 +116,13 @@ function g6_settings_handle_save( array &$config ): void {
 	$config['support_hours_api_key']   = sanitize_text_field( $_POST['support_hours_api_key'] ?? '' );
 	$config['support_hours_record_id'] = $new_record_id;
 
-	$config['tickets_destination'] = ( ( $_POST['tickets_destination'] ?? 'zendesk' ) === 'portal' )
-		? 'portal'
-		: 'zendesk';
+	// Against g6_ticket_destinations(), so a destination that is retired
+	// there cannot be saved here by a stale form still holding its value.
+	$_posted_dest = (string) ( $_POST['tickets_destination'] ?? '' );
+
+	$config['tickets_destination'] = isset( g6_ticket_destinations()[ $_posted_dest ] )
+		? $_posted_dest
+		: G6_TICKETS_DEFAULT_DESTINATION;
 
 	// The token is pasted, so it arrives with whatever whitespace came
 	// with it. sanitize_text_field alone leaves an inner newline intact,
@@ -927,7 +931,7 @@ function g6_settings_page_render(): void {
 								<div class="g6w-card__icon"><?php echo g6_icon( 'message-circle', 20 ); ?></div>
 								<div>
 									<h3 class="g6w-card__title">Get in Touch</h3>
-									<p class="g6w-card__desc">Support request form. Files each request into Zendesk or the Group6 portal.</p>
+									<p class="g6w-card__desc">Support request form. Files each request into Zendesk, the Group6 Client Portal, or plain email.</p>
 								</div>
 							</div>
 						</div>
@@ -935,8 +939,11 @@ function g6_settings_page_render(): void {
 							<div class="g6s-field" style="max-width:320px;">
 								<label class="g6s-field__label" for="tickets_destination">File requests into</label>
 								<select class="g6s-field__input" id="tickets_destination" name="tickets_destination">
-									<option value="zendesk" <?php selected( ! $_tk_portal ); ?>>Zendesk</option>
-									<option value="portal" <?php selected( $_tk_portal ); ?>>Group6 Client Portal</option>
+									<?php foreach ( g6_ticket_destinations() as $_d_value => $_d_label ) : ?>
+										<option value="<?php echo esc_attr( $_d_value ); ?>" <?php selected( $_tk_dest, $_d_value ); ?>>
+											<?php echo esc_html( $_d_label ); ?>
+										</option>
+									<?php endforeach; ?>
 								</select>
 							</div>
 							<p class="description" style="margin-top:6px;">
@@ -945,8 +952,16 @@ function g6_settings_page_render(): void {
 									<strong>Group6 Portal</strong> on the Dashboard tab, or requests will fall
 									back to email.</span>
 								<?php elseif ( $_tk_portal ) : ?>
-									Requests open a ticket in the portal, under this site's client. The
-									client sees the thread and every reply in their portal.
+									Requests open a ticket in the <strong>Group6 Client Portal</strong>, under
+									this site's client, using the token under <strong>Group6 Portal</strong> on
+									the Dashboard tab. The client sees the thread and every reply in their
+									portal.
+								<?php elseif ( 'email' === $_tk_dest ) : ?>
+									Requests are emailed to
+									<strong><?php echo esc_html( $cfg['agency_rep_email'] ?? 'the account manager' ); ?></strong>
+									and no ticket is opened anywhere. Replying to that email replies to the
+									person who sent it. For a client we support without a ticket queue &mdash;
+									and it is where the other two land anyway if they cannot be reached.
 								<?php else : ?>
 									Requests go to Zendesk, as they always have. Switch this per site — a
 									site can read Support Hours from the portal while its form still

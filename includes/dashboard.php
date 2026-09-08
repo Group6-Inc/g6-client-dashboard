@@ -93,9 +93,20 @@ function g6_get_dashboard_css(): string {
 	#wpbody-content > .g6-dashboard { margin: 50px 20px 0 2px; }
 
 	/* ── Neutralise WordPress welcome-panel typography overrides ── */
-	#welcome-panel h2 { font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; margin: inherit !important; }
-	#welcome-panel h3 { font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; margin: inherit !important; }
-	#welcome-panel p  { font-size: inherit !important; line-height: inherit !important; margin: inherit !important; }
+	#welcome-panel h2 { font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+	#welcome-panel h3 { font-size: inherit !important; font-weight: inherit !important; line-height: inherit !important; }
+	#welcome-panel p  { font-size: inherit !important; line-height: inherit !important; }
+
+	/* The margin half of that, stopped at our own elements by :not().
+	   margin: inherit does not mean "no margin" — it means take the
+	   parent element\'s. Being !important on an id, it beat every class
+	   rule below, so .g6-project__next-label was handed the 16px top
+	   margin of the .g6-project__next it sits in, by a rule 100 lines
+	   away that names neither. Its own margin: 0 never had a chance,
+	   and writing it a second time was never going to help. */
+	#welcome-panel h2:not([class*="g6-"]),
+	#welcome-panel h3:not([class*="g6-"]),
+	#welcome-panel p:not([class*="g6-"]) { margin: inherit !important; }
 
 	/* ── Design tokens ── */
 	:root {
