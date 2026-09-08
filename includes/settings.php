@@ -883,7 +883,7 @@ function g6_settings_page_render(): void {
 								<div class="g6w-card__icon"><?php echo g6_icon( 'trending-up', 20 ); ?></div>
 								<div>
 									<h3 class="g6w-card__title">Project Status</h3>
-									<p class="g6w-card__desc">Where the client's project has got to, read from the Group6 portal.</p>
+									<p class="g6w-card__desc">Where the client&rsquo;s project has got to, read live from the Group6 Client Portal.</p>
 								</div>
 							</div>
 						</div>
@@ -893,9 +893,18 @@ function g6_settings_page_render(): void {
 									<span style="color:#d63638;"><strong>No portal token.</strong> Add one under
 									<strong>Group6 Portal</strong> on the Dashboard tab — this widget has no other source.</span>
 								<?php else : ?>
-									Shows each project that has not launched: its stage, how many steps are
-									done, the date it is aimed at, and what happens next. Nothing appears if
-									there are no live projects, so it is safe to leave on.
+									Shows each project that has not launched: its stage, the steps it is
+									made of &mdash; finished ones dated, the one being worked on marked
+									&mdash; the date it is aimed at, and what happens next. With more than
+									one project, arrows move between them.
+									<br><br>
+									Every word of it comes from the <strong>Group6 Client Portal</strong>,
+									fetched with this site&rsquo;s token under <strong>Group6 Portal</strong>
+									on the Dashboard tab. There is no Airtable equivalent and nothing to
+									fill in here: change a project in the portal and this follows within
+									half an hour. Remove the token and the widget goes quiet.
+									<br><br>
+									Nothing appears if there are no live projects, so it is safe to leave on.
 								<?php endif; ?>
 							</p>
 							<p class="description" style="margin-top:6px;">

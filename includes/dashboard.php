@@ -200,9 +200,9 @@ function g6_get_dashboard_css(): string {
 	   what is actually happening, which is what the portal shows and
 	   what a client asks about. */
 	.g6-project__list { list-style: none; margin: 14px 0 0; padding: 0; }
-	.g6-project__step { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid #F3F4F6; font-size: 13.5px; }
+	.g6-project__step { display: flex; align-items: flex-start; gap: 9px; padding: 7px 0; border-bottom: 1px solid #F3F4F6; font-size: 13.5px; line-height: 20px; }
 	.g6-project__step:last-child { border-bottom: 0; }
-	.g6-project__tick { flex: 0 0 15px; height: 15px; border-radius: 4px; border: 1px solid #D1D5DB; font-size: 9px; line-height: 15px; text-align: center; color: #fff; }
+	.g6-project__tick { flex: 0 0 15px; height: 15px; margin-top: 2px; border-radius: 4px; border: 1px solid #D1D5DB; font-size: 9px; line-height: 15px; text-align: center; color: #fff; }
 	.g6-project__step.is-done .g6-project__tick { background: var(--g6-neutral-900); border-color: var(--g6-neutral-900); }
 	.g6-project__step.is-current .g6-project__tick { border-color: var(--g6-primary); }
 	.g6-project__step-name { flex: 1 1 auto; color: var(--g6-neutral-900); }
