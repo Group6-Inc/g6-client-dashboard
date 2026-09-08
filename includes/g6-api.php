@@ -55,6 +55,9 @@ const G6_API_CACHE_TTL = 30 * MINUTE_IN_SECONDS;
 /** Failures back off briefly so a slow app doesn't hammer the site. */
 const G6_API_ERROR_TTL = 5 * MINUTE_IN_SECONDS;
 
+/** Which plugin version last filled the cache — see g6_api_flush_on_upgrade(). */
+const G6_API_VERSION_OPTION = 'g6_dashboard_api_version';
+
 /**
  * The base URL is part of the key. Point a site at staging and back and
  * the balance you are shown must come from the portal you are actually
@@ -334,6 +337,35 @@ function g6_api_clear_cache( string $token, ?array $cfg = null ): void {
 	foreach ( [ 'support-hours', 'projects', 'tickets', 'ticket-categories' ] as $endpoint ) {
 		delete_transient( g6_api_transient_key( $endpoint, $token, $cfg ) );
 	}
+}
+
+/**
+ * Drop the cache when the plugin has just been updated.
+ *
+ * A cached response is a snapshot of the shape the PREVIOUS version of
+ * this plugin asked for. When an update starts reading a field the old
+ * response never carried — the project steps did exactly this — the new
+ * code finds it missing and takes its own fallback path, quietly, for up
+ * to G6_API_CACHE_TTL. That reads precisely like the new feature being
+ * broken, on a site where everything is in fact correct, and it goes away
+ * on its own before anyone can look at it.
+ *
+ * So the version the cache was filled by is recorded, and any change to
+ * it empties the cache. One extra request per update, once.
+ */
+function g6_api_flush_on_upgrade(): void {
+	if ( ! defined( 'G6_DASHBOARD_VERSION' ) ) {
+		return;
+	}
+
+	if ( get_option( G6_API_VERSION_OPTION, '' ) === G6_DASHBOARD_VERSION ) {
+		return;
+	}
+
+	g6_api_clear_cache( g6_portal_token() );
+
+	// Not autoloaded: it is read once per request by this function alone.
+	update_option( G6_API_VERSION_OPTION, G6_DASHBOARD_VERSION, false );
 }
 
 /** Last error message stored by the backoff transient, or ''. */

@@ -34,6 +34,7 @@ $GLOBALS['php_diagnostics'] = 0;
 define('ABSPATH', '/tmp');
 define('HOUR_IN_SECONDS', 3600);
 define('MINUTE_IN_SECONDS', 60);
+define('G6_DASHBOARD_VERSION', '1.0.0.1');
 
 class WP_Error {
     public function __construct(public string $code = '', public string $message = '') {}
@@ -46,6 +47,10 @@ function get_transient($k) { return $GLOBALS['t'][$k] ?? false; }
 function set_transient($k, $v, $ttl = 0) { $GLOBALS['t'][$k] = $v; return true; }
 function delete_transient($k) { unset($GLOBALS['t'][$k]); return true; }
 function current_time($f) { return '2026-09-04 12:00:00'; }
+
+$GLOBALS['o'] = [];
+function get_option($k, $default = false) { return $GLOBALS['o'][$k] ?? $default; }
+function update_option($k, $v, $autoload = null) { $GLOBALS['o'][$k] = $v; return true; }
 
 $GLOBALS['cfg'] = [];
 function g6_get_client_config() { return $GLOBALS['cfg']; }
@@ -295,6 +300,24 @@ is('only the first card is visible', str_contains($tpl, "\$_i === 0 ? '' : 'hidd
 // The step list comes from the API's steps array. Falling back to the
 // counts keeps an older portal working rather than rendering nothing.
 is('falls back to the counts', str_contains($tpl, "(int) ( \$_p['steps_total'] ?? 0 )"), true);
+
+// ── 19. An update never reads what the previous version cached ───────
+// The steps list shipped in the plugin before the field existed in the
+// cached payload, so the widget fell back to the counts for half an hour
+// on a site where both halves were correct.
+$GLOBALS['cfg'] = ['portal_token' => 'tok', 'portal_url' => 'https://p.test/api/v1'];
+$GLOBALS['o'] = [];
+$GLOBALS['t'] = [g6_api_transient_key('projects', 'tok') => ['projects' => [['name' => 'Old']]]];
+
+g6_api_flush_on_upgrade();
+is('an update empties the cache', get_transient(g6_api_transient_key('projects', 'tok')), false);
+is('the version is recorded', get_option(G6_API_VERSION_OPTION), '1.0.0.1');
+
+// Every other request must leave it alone, or the cache never holds.
+$GLOBALS['t'][g6_api_transient_key('projects', 'tok')] = ['projects' => []];
+g6_api_flush_on_upgrade();
+is('the same version leaves it alone',
+   get_transient(g6_api_transient_key('projects', 'tok')), ['projects' => []]);
 
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
