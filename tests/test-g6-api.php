@@ -282,6 +282,20 @@ g6_api_get_support_hours('tok');
 is('the request goes where the setting says',
    $GLOBALS['http']['calls'][0]['url'], 'https://staging.test/api/v1/support-hours');
 
+// ── 18. The widget only shows a pager when there is something to page ─
+$tpl = file_get_contents(__DIR__ . '/../includes/widgets/projects.php');
+is('the pager is conditional', str_contains($tpl, 'count( $_pj ) > 1'), true);
+is('the title agrees with the count',
+   str_contains($tpl, "count( \$_pj ) === 1 ? 'Your project' : 'Your projects'"), true);
+is('steps are rendered, not just counted', str_contains($tpl, 'g6-project__step-name'), true);
+
+// Every project after the first starts hidden, or they stack.
+is('only the first card is visible', str_contains($tpl, "\$_i === 0 ? '' : 'hidden'"), true);
+
+// The step list comes from the API's steps array. Falling back to the
+// counts keeps an older portal working rather than rendering nothing.
+is('falls back to the counts', str_contains($tpl, "(int) ( \$_p['steps_total'] ?? 0 )"), true);
+
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
     printf("FAIL %d PHP warning(s)/notice(s) emitted — see above\n", $GLOBALS['php_diagnostics']);

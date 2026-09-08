@@ -192,7 +192,31 @@ function g6_get_dashboard_css(): string {
 	.g6-project__next-label { font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--g6-primary-dark); margin: 0 0 3px; font-weight: 600; }
 	.g6-project__next-text { font-size: 13.5px; line-height: 1.5; color: var(--g6-neutral-900); margin: 0; }
 	/* The age is the honesty of the card — see the note where it is rendered. */
-	.g6-project__updated { font-size: 11.5px; color: #9CA3AF; margin: 12px 0 0; }
+	/* Its own line, well clear of whatever came before it. It is a
+	   footnote about the card, not part of the last thing in it. */
+	.g6-project__updated { font-size: 11.5px; color: #9CA3AF; margin: 20px 0 0; padding-top: 12px; border-top: 1px solid var(--g6-neutral-200); }
+
+	/* The steps themselves. A fraction says how far along; this says
+	   what is actually happening, which is what the portal shows and
+	   what a client asks about. */
+	.g6-project__list { list-style: none; margin: 14px 0 0; padding: 0; }
+	.g6-project__step { display: flex; align-items: baseline; gap: 9px; padding: 7px 0; border-bottom: 1px solid #F3F4F6; font-size: 13.5px; }
+	.g6-project__step:last-child { border-bottom: 0; }
+	.g6-project__tick { flex: 0 0 15px; height: 15px; border-radius: 4px; border: 1px solid #D1D5DB; font-size: 9px; line-height: 15px; text-align: center; color: #fff; }
+	.g6-project__step.is-done .g6-project__tick { background: var(--g6-neutral-900); border-color: var(--g6-neutral-900); }
+	.g6-project__step.is-current .g6-project__tick { border-color: var(--g6-primary); }
+	.g6-project__step-name { flex: 1 1 auto; color: var(--g6-neutral-900); }
+	.g6-project__step.is-done .g6-project__step-name { color: var(--g6-neutral-500); text-decoration: line-through; }
+	.g6-project__step.is-current .g6-project__step-name { font-weight: 600; }
+	.g6-project__step-when { flex: 0 0 auto; font-size: 11.5px; color: #9CA3AF; }
+	.g6-project__step.is-current .g6-project__step-when { color: var(--g6-primary); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+
+	/* Pager. Only rendered with more than one project, so it never sits
+	   there greyed out on the common case of exactly one. */
+	.g6-project__pager { display: flex; align-items: center; gap: 6px; }
+	.g6-project__pos { font-size: 11.5px; color: var(--g6-neutral-500); min-width: 34px; text-align: center; }
+	.g6-project__arrow { border: 1px solid var(--g6-neutral-200); background: #fff; border-radius: 6px; width: 26px; height: 26px; line-height: 1; font-size: 15px; color: var(--g6-neutral-500); cursor: pointer; padding: 0; }
+	.g6-project__arrow:hover { border-color: #D1D5DB; color: var(--g6-neutral-900); }
 
 	.g6-dashboard__section-title { font-family: var(--g6-font-heading); font-size: 18px; font-weight: 600; color: var(--g6-neutral-900); margin: 0; display: flex; align-items: center; gap: 8px; }
 	.g6-dashboard__section-title svg { color: var(--g6-primary); }
@@ -655,6 +679,31 @@ function g6_render_dashboard(): void {
 	</div>
 
 	<script>
+	// Project pager: one project on screen, arrows to move between them.
+	// The cards are all rendered and hidden rather than fetched on
+	// demand — there are two or three of them, and a dashboard widget
+	// that goes to the network to show something already downloaded is
+	// slower for no reason.
+	document.addEventListener('DOMContentLoaded', function() {
+		var wrap = document.getElementById('g6-projects');
+		if (!wrap) return;
+
+		var cards = [...wrap.querySelectorAll('.g6-project')];
+		var pos   = document.getElementById('g6-project-pos');
+		var at    = 0;
+
+		if (cards.length < 2) return;
+
+		wrap.querySelectorAll('.g6-project__arrow').forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				// Wraps, so neither arrow is ever a dead button.
+				at = (at + Number(btn.dataset.step) + cards.length) % cards.length;
+				cards.forEach(function(card, i) { card.hidden = i !== at; });
+				if (pos) pos.textContent = String(at + 1);
+			});
+		});
+	});
+
 	function g6SubmitContact() {
 		var subject   = document.getElementById('g6-subject').value.trim();
 		var message   = document.getElementById('g6-message').value;
