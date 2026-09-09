@@ -352,6 +352,35 @@ is('the margin reset excludes our markup',
 is('nothing resets every paragraph margin any more',
    str_contains($_css, '#welcome-panel p  { font-size: inherit !important; line-height: inherit !important; margin: inherit !important; }'), false);
 
+// ── 21. The Zendesk topic list goes wherever Zendesk goes ────────────
+// Those options are the wording of Zendesk's own issue-type field, not a
+// topic list of ours. A site set to email is filing nothing into Zendesk
+// and must not still be answering its question — so the dropdown is
+// behind 'zendesk' === the destination, stated as a negative so that
+// deleting Zendesk from g6_ticket_destinations() retires the markup too.
+$_contact = file_get_contents(__DIR__ . '/../includes/widgets/contact.php');
+is('the typed subject is anything but zendesk',
+   str_contains($_contact, "\$_c_typed = ( 'zendesk' !== \$_c_dest );"), true);
+
+$_if   = strpos($_contact, 'if ( $_c_typed )');
+$_else = strpos($_contact, '<?php else : ?>', $_if);
+$_opt  = strpos($_contact, 'I would like to update my website');
+is('the dropdown is on the far side of that branch',
+   $_if !== false && $_else !== false && $_opt !== false && $_if < $_else && $_else < $_opt, true);
+
+// The portal's own topic list is separate and survives: it is fetched,
+// and it sits beside a typed subject rather than replacing one.
+is('the portal topics are not behind the same branch',
+   strpos($_contact, '$_c_topics ) : ?>') < $_if, true);
+
+// Wording is read off the field, not the mode name — three destinations
+// render two kinds of subject field between them.
+$_js = file_get_contents(__DIR__ . '/../includes/dashboard.php');
+is('the error follows the field, not the mode',
+   str_contains($_js, "var typedSubject = subjectEl.tagName !== 'SELECT';"), true);
+is('nothing keys the wording off portal mode any more',
+   str_contains($_js, "dataset.mode === 'portal'"), false);
+
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
     printf("FAIL %d PHP warning(s)/notice(s) emitted — see above\n", $GLOBALS['php_diagnostics']);

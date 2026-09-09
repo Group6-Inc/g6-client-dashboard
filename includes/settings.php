@@ -962,6 +962,10 @@ function g6_settings_page_render(): void {
 									and no ticket is opened anywhere. Replying to that email replies to the
 									person who sent it. For a client we support without a ticket queue &mdash;
 									and it is where the other two land anyway if they cannot be reached.
+									<br><br>
+									The form is a subject line and a message: no topic dropdown, since that
+									list is Zendesk&rsquo;s own issue-type field and a site set to email is
+									not filing anything into Zendesk.
 								<?php else : ?>
 									Requests go to Zendesk, as they always have. Switch this per site — a
 									site can read Support Hours from the portal while its form still

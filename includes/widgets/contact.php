@@ -27,19 +27,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 					Have a question or need help? Submit a request and your account manager will follow up.
 				</p>
 				<?php
-				// Two shapes for one form.
+				// One form, three shapes, one rule: the subject dropdown
+				// belongs to Zendesk and goes wherever Zendesk goes.
 				//
-				// Zendesk wants its issue-type field, whose options are
-				// prose and double as the ticket subject — those strings
-				// are mapped 1:1 in includes/ajax.php and must not drift.
+				// Those options are not a topic list we wrote. They are
+				// the wording of Zendesk's own issue-type field, mapped
+				// 1:1 in includes/ajax.php, and they double as the ticket
+				// subject. A site that has been moved off Zendesk should
+				// not still be answering its question — which is the
+				// whole point of moving off it.
 				//
-				// The portal has real categories, editable by staff, so
-				// the list is fetched rather than baked in; and it has a
-				// subject of its own, which is what makes a queue of
-				// tickets readable. Sending the category name as the
-				// subject would give staff twenty rows all called
+				// The portal has real categories instead, editable by
+				// staff, so that list is fetched rather than baked in;
+				// and it has a subject of its own, which is what makes a
+				// queue of tickets readable. Sending the category name as
+				// the subject would give staff twenty rows all called
 				// "Website Update".
-				$_c_portal     = function_exists( 'g6_tickets_destination' ) && 'portal' === g6_tickets_destination( $cfg );
+				//
+				// Email has neither. A message to a person needs a line
+				// saying what it is about and the message itself, and a
+				// dropdown of somebody else's categories in front of it
+				// is just a question nothing will ever read the answer to.
+				$_c_dest       = function_exists( 'g6_tickets_destination' )
+					? g6_tickets_destination( $cfg )
+					: 'zendesk';
+				$_c_portal     = ( 'portal' === $_c_dest );
 				$_c_categories = $_c_portal ? g6_api_get_ticket_categories( g6_portal_token( $cfg ) ) : [];
 
 				// The SHAPE follows the setting, not the fetch.
@@ -52,9 +64,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 				// on the fetch succeeding; without it the portal applies
 				// its own default category.
 				$_c_topics = $_c_portal && ! empty( $_c_categories );
+
+				// Stated this way round on purpose: when Zendesk is
+				// deleted from g6_ticket_destinations(), no site can be
+				// on it, and the dropdown below stops rendering anywhere
+				// without a second edit here.
+				$_c_typed = ( 'zendesk' !== $_c_dest );
 				?>
-				<div class="g6-contact-form" id="g6-contact-form" data-mode="<?php echo $_c_portal ? 'portal' : 'legacy'; ?>">
-					<?php if ( $_c_portal ) : ?>
+				<div class="g6-contact-form" id="g6-contact-form" data-mode="<?php echo esc_attr( $_c_dest ); ?>">
 					<?php if ( $_c_topics ) : ?>
 					<div class="g6-contact-form__field">
 						<label class="g6-contact-form__label" for="g6-category">Topic</label>
@@ -66,6 +83,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</select>
 					</div>
 					<?php endif; ?>
+					<?php if ( $_c_typed ) : ?>
 					<div class="g6-contact-form__field">
 						<label class="g6-contact-form__label" for="g6-subject">Subject</label>
 						<input class="g6-contact-form__select" type="text" id="g6-subject" name="subject"
