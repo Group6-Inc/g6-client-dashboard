@@ -47,6 +47,7 @@ function get_transient($k) { return $GLOBALS['t'][$k] ?? false; }
 function set_transient($k, $v, $ttl = 0) { $GLOBALS['t'][$k] = $v; return true; }
 function delete_transient($k) { unset($GLOBALS['t'][$k]); return true; }
 function current_time($f) { return '2026-09-04 12:00:00'; }
+function get_bloginfo($what) { return $what === 'version' ? '6.7.1' : ''; }
 
 $GLOBALS['o'] = [];
 function get_option($k, $default = false) { return $GLOBALS['o'][$k] ?? $default; }
@@ -380,6 +381,47 @@ is('the error follows the field, not the mode',
    str_contains($_js, "var typedSubject = subjectEl.tagName !== 'SELECT';"), true);
 is('nothing keys the wording off portal mode any more',
    str_contains($_js, "dataset.mode === 'portal'"), false);
+
+// ── 22. Every call says what this site is running ────────────────────
+// The portal turns these into its Sites screen. They ride on requests
+// already being made, so the check is that BOTH paths carry them — a GET
+// that reports and a ticket submission that does not would make a site
+// look out of date the moment its dashboard stopped being opened.
+$GLOBALS['t'] = [];
+$GLOBALS['cfg'] = [
+    'portal_token'         => 'tok',
+    'support_hours_source' => 'portal',
+    'tickets_destination'  => 'email',
+];
+$GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['active' => true])];
+
+g6_api_get_support_hours('tok');
+$_sent = $GLOBALS['http']['calls'][0]['args']['headers'];
+
+is('the call still authenticates', $_sent['Authorization'], 'Bearer tok');
+is('it reports the plugin version', $_sent['X-G6-Plugin-Version'], G6_DASHBOARD_VERSION);
+is('it reports WordPress', $_sent['X-G6-WP-Version'], '6.7.1');
+is('it reports PHP', $_sent['X-G6-PHP-Version'], PHP_VERSION);
+
+// The two settings the cutover is actually made of, in the site's own
+// words rather than the portal guessing from what it is asked for.
+is('it reports where hours come from', $_sent['X-G6-Hours-Source'], 'portal');
+is('it reports where tickets go', $_sent['X-G6-Tickets-Destination'], 'email');
+
+$GLOBALS['http'] = ['code' => 201, 'calls' => [], 'body' => json_encode(['id' => 1])];
+g6_api_submit_ticket('tok', ['subject' => 'Hello', 'body' => 'There']);
+$_posted = $GLOBALS['http']['calls'][0]['args']['headers'];
+
+is('a submitted ticket reports too', $_posted['X-G6-Plugin-Version'], G6_DASHBOARD_VERSION);
+is('and still authenticates', $_posted['Authorization'], 'Bearer tok');
+
+// An unconfigured site defaults the same way everything else does, so
+// the portal is told "airtable/zendesk" rather than nothing at all.
+$GLOBALS['cfg'] = [];
+$_default = g6_api_headers('tok');
+is('an unconfigured site reports its real defaults',
+   [$_default['X-G6-Hours-Source'], $_default['X-G6-Tickets-Destination']],
+   ['airtable', 'zendesk']);
 
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
