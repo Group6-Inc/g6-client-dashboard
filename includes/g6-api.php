@@ -68,6 +68,35 @@ function g6_api_transient_key( string $endpoint, string $token, ?array $cfg = nu
 }
 
 /**
+ * The headers every call to the portal carries.
+ *
+ * Beyond the token: what this site is running and how it is configured.
+ * The portal records it against the site, which turns "which sites have
+ * I actually moved over, and which are on an old plugin?" into a screen
+ * instead of an afternoon of logging into WordPress installs.
+ *
+ * It rides on the requests already being made — there is no heartbeat,
+ * nothing extra on a page load, and a site that never calls the API
+ * simply never reports, which the portal shows as exactly that.
+ *
+ * Nothing here identifies a person. It is the software and the two
+ * settings, sent to the agency that maintains the site.
+ */
+function g6_api_headers( string $token, ?array $cfg = null ): array {
+	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
+
+	return [
+		'Authorization'             => 'Bearer ' . $token,
+		'Accept'                    => 'application/json',
+		'X-G6-Plugin-Version'       => defined( 'G6_DASHBOARD_VERSION' ) ? G6_DASHBOARD_VERSION : '',
+		'X-G6-WP-Version'           => get_bloginfo( 'version' ),
+		'X-G6-PHP-Version'          => PHP_VERSION,
+		'X-G6-Hours-Source'         => g6_support_hours_source( $cfg ),
+		'X-G6-Tickets-Destination'  => g6_tickets_destination( $cfg ),
+	];
+}
+
+/**
  * GET one endpoint and return the decoded body.
  *
  * @return array|WP_Error
@@ -77,10 +106,7 @@ function g6_api_fetch( string $endpoint, string $token ): array|WP_Error {
 		g6_api_base() . '/' . ltrim( $endpoint, '/' ),
 		[
 			'timeout' => 10,
-			'headers' => [
-				'Authorization' => 'Bearer ' . $token,
-				'Accept'        => 'application/json',
-			],
+			'headers' => g6_api_headers( $token ),
 		]
 	);
 
@@ -309,10 +335,7 @@ function g6_api_submit_ticket( string $token, array $fields ): array|WP_Error {
 		g6_api_base() . '/tickets',
 		[
 			'timeout' => 15,
-			'headers' => [
-				'Authorization' => 'Bearer ' . $token,
-				'Accept'        => 'application/json',
-			],
+			'headers' => g6_api_headers( $token ),
 			'body'    => $payload,
 		]
 	);

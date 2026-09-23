@@ -716,7 +716,8 @@ function g6_render_dashboard(): void {
 	});
 
 	function g6SubmitContact() {
-		var subject   = document.getElementById('g6-subject').value.trim();
+		var subjectEl = document.getElementById('g6-subject');
+		var subject   = subjectEl.value.trim();
 		var message   = document.getElementById('g6-message').value;
 		var categoryEl = document.getElementById('g6-category');
 		var category  = categoryEl ? categoryEl.value : '';
@@ -726,14 +727,16 @@ function g6_render_dashboard(): void {
 		errorEl.style.display   = 'none';
 		successEl.style.display = 'none';
 
-		// The subject is required either way — the portal's API requires
-		// it, and on the Zendesk form the dropdown IS the subject.
+		// The subject is required in every shape of this form — the
+		// portal's API requires it, and on the Zendesk form the dropdown
+		// IS the subject.
 		//
-		// Which wording to use follows the form's mode, not whether a
-		// topic dropdown happens to be present: the portal form renders
-		// without one when the topic list could not be fetched, and
-		// "please SELECT a subject" beside a text box is nonsense.
-		var portalForm = document.getElementById('g6-contact-form').dataset.mode === 'portal';
+		// Which wording to use is read off the field itself rather than
+		// the form's mode: three modes render two kinds of subject field
+		// between them, and "please SELECT a subject" beside a text box
+		// is nonsense whichever mode produced it. A fourth destination
+		// gets the right sentence without touching this.
+		var typedSubject = subjectEl.tagName !== 'SELECT';
 
 		if ( categoryEl && ! category ) {
 			errorEl.textContent   = 'Please choose a topic.';
@@ -742,7 +745,7 @@ function g6_render_dashboard(): void {
 		}
 
 		if ( ! subject || ! message ) {
-			errorEl.textContent    = portalForm
+			errorEl.textContent    = typedSubject
 				? 'Please add a subject and a message.'
 				: 'Please select a subject and enter a message.';
 			errorEl.style.display  = 'block';
@@ -765,7 +768,7 @@ function g6_render_dashboard(): void {
 			.then(function(result) {
 				if ( result.success ) {
 					successEl.style.display = 'flex';
-					document.getElementById('g6-subject').value = '';
+					subjectEl.value = '';
 					document.getElementById('g6-message').value = '';
 					if ( categoryEl ) { categoryEl.value = ''; }
 					btn.textContent = 'Sent \u2713';
