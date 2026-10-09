@@ -430,9 +430,9 @@ function g6_api_get_last_error( string $endpoint, string $token ): string {
  * Verify a token by making one live call. Used by the settings screen's
  * "Test connection" button.
  *
- * @return true|WP_Error
+ * @return true|WP_Error Always true on success; typed bool for PHP 8.0/8.1.
  */
-function g6_api_test_connection( string $token ): true|WP_Error {
+function g6_api_test_connection( string $token ): bool|WP_Error {
 	$result = g6_api_fetch( 'support-hours', $token );
 
 	return is_wp_error( $result ) ? $result : true;
