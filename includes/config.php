@@ -17,6 +17,55 @@ function g6_get_client_config(): array {
 	return g6_default_config();
 }
 
+/** Set once a site's saved text has been through g6_config_repair_slashes(). */
+const G6_SLASHES_REPAIRED_OPTION = 'g6_config_slashes_repaired';
+
+/**
+ * Strip the backslashes earlier versions saved in front of quotes.
+ *
+ * The settings save never unslashed what WordPress slashes, so We're
+ * "good" was stored as We\'re \"good\" — and every later save of the
+ * same form added another layer. Peeled until no escaped quote is left,
+ * however many layers there are. A string with no escaped quote in it is
+ * left exactly as it is, so a backslash typed on purpose survives.
+ */
+function g6_unslash_saved_text( mixed $value ): mixed {
+	if ( is_array( $value ) ) {
+		return array_map( 'g6_unslash_saved_text', $value );
+	}
+
+	if ( ! is_string( $value ) ) {
+		return $value;
+	}
+
+	while ( preg_match( '/\\\\[\'"]/', $value ) ) {
+		$peeled = stripslashes( $value );
+		if ( $peeled === $value ) {
+			break;
+		}
+		$value = $peeled;
+	}
+
+	return $value;
+}
+
+/** Runs once per site, on the first request after updating. */
+function g6_config_repair_slashes(): void {
+	if ( get_option( G6_SLASHES_REPAIRED_OPTION ) ) {
+		return;
+	}
+
+	$stored = get_option( 'g6_client_config' );
+	if ( $stored && is_array( $stored ) ) {
+		$repaired = g6_unslash_saved_text( $stored );
+		if ( $repaired !== $stored ) {
+			update_option( 'g6_client_config', $repaired );
+		}
+	}
+
+	update_option( G6_SLASHES_REPAIRED_OPTION, 1 );
+}
+
 /**
  * The widgets to render, in the order this site has put them in.
  *
@@ -234,19 +283,12 @@ function g6_default_config(): array {
 		'reviews_cta_text'     => '',
 		'reviews_api_key'      => '',
 
-		// Support Hours integration (dashboard sidebar). One widget, two
-		// possible sources — Airtable as it has always worked, or the
-		// Group6 client portal. Airtable stays the default so existing
-		// sites carry on unchanged after an update.
-		'support_hours_enabled'   => false,
-		'support_hours_source'    => 'airtable', // 'airtable' | 'portal'
-		'support_hours_api_key'   => '', // Airtable Personal Access Token
-		'support_hours_record_id' => '',
+		// Support Hours balance in the dashboard sidebar, read from the
+		// Group6 client portal with the token below.
+		'support_hours_enabled' => false,
 
-		// Where the Get in Touch form files a request. Zendesk until a
-		// site is cut over; both can be true of different sites at once,
-		// which is what a parallel run looks like.
-		'tickets_destination' => 'zendesk', // 'zendesk' | 'portal'
+		// Where the Get in Touch form files a request.
+		'tickets_destination' => 'portal', // 'portal' | 'email'
 
 		// The Group6 portal connection. One credential, shared by every
 		// feature that reads from or writes to the portal — it is not a

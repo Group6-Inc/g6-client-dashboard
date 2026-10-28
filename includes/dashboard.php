@@ -456,10 +456,9 @@ function g6_get_dashboard_css(): string {
 	}
 
 	/* ── Support Hours meter ── */
-	/* No percentage bar: "Total Hours Purchased" is a cumulative lifetime
-	   counter in Airtable that never resets on repurchase, so balance/total
-	   is not a meaningful "% remaining" — see the PHP-side comment in
-	   g6_render_dashboard() for the full explanation. */
+	/* No percentage bar: total_hours is every hour ever purchased, so
+	   balance/total is not a meaningful "% remaining" — see the PHP-side
+	   comment in g6_render_dashboard(). */
 	.g6-hours-meter__value {
 		font-size: 12.5px;
 		color: rgba(255,255,255,0.65);
@@ -516,22 +515,9 @@ function g6_render_dashboard(): void {
 	if ( ! empty( $tracking['clarity_project_id'] ) ) $tracking_pills[] = [ 'badge' => 'CLA',  'label' => 'Microsoft Clarity',     'bg' => '#4f46e5', 'color' => '#fff',     'id' => $tracking['clarity_project_id'] ];
 
 	// ── Support Hours ──
-	// Two sources, one widget. Both fetchers return the same array —
-	// [ active, balance_hours, total_hours, fetched_at ] — so everything
-	// below this block is the same code it always was.
+	// Read from the portal: [ active, balance_hours, total_hours, fetched_at ].
 	$_sh_enabled = ! empty( $cfg['support_hours_enabled'] );
-	$_sh_source  = g6_support_hours_source( $cfg );
-	$_sh_data    = false;
-
-	if ( $_sh_enabled && 'portal' === $_sh_source ) {
-		$_sh_data = g6_api_get_support_hours( $cfg['portal_token'] ?? '' );
-	} elseif ( $_sh_enabled ) {
-		$_sh_record_id = $cfg['support_hours_record_id'] ?? '';
-		$_sh_api_key   = $cfg['support_hours_api_key'] ?? '';
-		$_sh_data      = ( $_sh_record_id && $_sh_api_key )
-			? g6_airtable_get_data( $_sh_record_id, $_sh_api_key )
-			: false;
-	}
+	$_sh_data    = $_sh_enabled ? g6_api_get_support_hours( g6_portal_token( $cfg ) ) : false;
 
 	$_show_sh = $_sh_enabled && is_array( $_sh_data );
 
@@ -539,11 +525,10 @@ function g6_render_dashboard(): void {
 		$_sh_balance = (float) $_sh_data['balance_hours'];
 
 		// Color threshold is based on absolute hours remaining, not a
-		// percentage of "Total Hours Purchased" — that field is a cumulative
-		// lifetime counter in Airtable that never resets when a client buys
-		// a new bucket after exhausting a previous one, so balance/total is
-		// not a meaningful ratio (e.g. a fresh 5h bucket right after using
-		// up a prior 5h one would read as "50%", not "100%").
+		// percentage of total_hours — that is every hour ever purchased,
+		// so balance/total is not a meaningful ratio (a fresh 5h bucket
+		// right after using up a prior 5h one would read as "50%", not
+		// "100%").
 		if ( $_sh_balance <= 2 )      $_sh_level = 'critical';
 		elseif ( $_sh_balance <= 3 )  $_sh_level = 'warning';
 		else                          $_sh_level = 'good';
@@ -727,27 +712,16 @@ function g6_render_dashboard(): void {
 		errorEl.style.display   = 'none';
 		successEl.style.display = 'none';
 
-		// The subject is required in every shape of this form — the
-		// portal's API requires it, and on the Zendesk form the dropdown
-		// IS the subject.
-		//
-		// Which wording to use is read off the field itself rather than
-		// the form's mode: three modes render two kinds of subject field
-		// between them, and "please SELECT a subject" beside a text box
-		// is nonsense whichever mode produced it. A fourth destination
-		// gets the right sentence without touching this.
-		var typedSubject = subjectEl.tagName !== 'SELECT';
-
 		if ( categoryEl && ! category ) {
 			errorEl.textContent   = 'Please choose a topic.';
 			errorEl.style.display = 'block';
 			return;
 		}
 
+		// The portal's API requires a subject, and an email needs one to
+		// say what it is about.
 		if ( ! subject || ! message ) {
-			errorEl.textContent    = typedSubject
-				? 'Please add a subject and a message.'
-				: 'Please select a subject and enter a message.';
+			errorEl.textContent    = 'Please add a subject and a message.';
 			errorEl.style.display  = 'block';
 			return;
 		}

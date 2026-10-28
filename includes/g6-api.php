@@ -1,20 +1,14 @@
 <?php
 /**
- * Group6 App integration — replaces the Airtable Support Hours layer.
+ * Group6 App integration — Support Hours, projects and tickets.
  *
- * Deliberately returns the same normalised array shape that
- * g6_airtable_get_data() did, so dashboard.php's Support Hours meter and
- * its thresholds need no changes:
+ * Support Hours comes back as the array dashboard.php's meter reads:
  *
  *     [ 'active' => bool, 'balance_hours' => float,
  *       'total_hours' => float, 'fetched_at' => string ]
  *
- * Differences from the Airtable version:
- *   - one site token replaces the PAT + record ID pair; the token itself
- *     identifies which client this site belongs to
- *   - 'total_hours' is now genuinely "hours ever purchased", not
- *     Airtable's cumulative counter
- *   - project status and ticket counts are available too
+ * One site token covers every call; the token itself identifies which
+ * client this site belongs to.
  *
  * @package G6\Dashboard
  */
@@ -91,7 +85,9 @@ function g6_api_headers( string $token, ?array $cfg = null ): array {
 		'X-G6-Plugin-Version'       => defined( 'G6_DASHBOARD_VERSION' ) ? G6_DASHBOARD_VERSION : '',
 		'X-G6-WP-Version'           => get_bloginfo( 'version' ),
 		'X-G6-PHP-Version'          => PHP_VERSION,
-		'X-G6-Hours-Source'         => g6_support_hours_source( $cfg ),
+		// Always the portal now that Airtable is gone. Still sent, so the
+		// portal's Sites screen reads the same for every plugin version.
+		'X-G6-Hours-Source'         => 'portal',
 		'X-G6-Tickets-Destination'  => g6_tickets_destination( $cfg ),
 	];
 }
@@ -179,18 +175,13 @@ function g6_portal_token( ?array $cfg = null ): string {
  * site's saved value is not in it — so retiring a destination is one
  * deletion here, not three edits that have to agree.
  *
- * When Zendesk goes: drop its line, point
- * G6_TICKETS_DEFAULT_DESTINATION at 'email', and delete the Zendesk
- * block in includes/ajax.php. Every site still saved as 'zendesk' then
- * falls through to that default on its next page load, with nothing to
- * migrate — which is the reason the default is a constant and not a
- * literal spelled out in four places.
+ * Zendesk was retired this way: a site still saved as 'zendesk' falls
+ * through to the default on its next page load, with nothing to migrate.
  *
  * @return array<string, string>
  */
 function g6_ticket_destinations(): array {
 	return [
-		'zendesk' => 'Zendesk',
 		'portal'  => 'Group6 Client Portal',
 		'email'   => 'Email to the account manager',
 	];
@@ -198,10 +189,10 @@ function g6_ticket_destinations(): array {
 
 /**
  * What a site does when it has chosen nothing, or something we no
- * longer offer. Zendesk while it still exists: a site updating to this
- * version has nothing saved and must carry on doing what it did.
+ * longer offer. The portal is where requests are managed; one that
+ * cannot be reached still lands in the account manager's inbox.
  */
-const G6_TICKETS_DEFAULT_DESTINATION = 'zendesk';
+const G6_TICKETS_DEFAULT_DESTINATION = 'portal';
 
 /** Where the Get in Touch form files a request. */
 function g6_tickets_destination( ?array $cfg = null ): string {
@@ -213,24 +204,7 @@ function g6_tickets_destination( ?array $cfg = null ): string {
 		: G6_TICKETS_DEFAULT_DESTINATION;
 }
 
-/**
- * Which source the Support Hours widget reads from.
- *
- * Anything that is not exactly 'portal' means Airtable. Sites updating
- * from an older version have no such setting saved, and they must carry
- * on reading Airtable rather than silently going blank.
- */
-function g6_support_hours_source( ?array $cfg = null ): string {
-	$cfg = $cfg ?? ( function_exists( 'g6_get_client_config' ) ? g6_get_client_config() : [] );
-
-	return ( ( $cfg['support_hours_source'] ?? 'airtable' ) === 'portal' ) ? 'portal' : 'airtable';
-}
-
-/**
- * Support Hours — drop-in replacement for g6_airtable_get_data().
- *
- * @return array|false
- */
+/** Support Hours balance. @return array|false */
 function g6_api_get_support_hours( string $token ): array|false {
 	return g6_api_get( 'support-hours', $token );
 }
