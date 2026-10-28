@@ -16,9 +16,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 ?>
 		<!-- Project Status -->
 		<?php
-		// The portal is the only source for this — there is no Airtable
-		// equivalent — so it needs a token whatever the Support Hours
-		// setting says. Already ordered most-recently-updated first by
+		// Needs the portal token whether or not Support Hours is on.
+		// Already ordered most-recently-updated first by
 		// the API, which is the one you want to land on.
 		$_pj = ( $cfg['widgets']['projects'] ?? false ) && function_exists( 'g6_api_get_live_projects' )
 			? g6_api_get_live_projects( g6_portal_token( $cfg ) )

@@ -3,7 +3,7 @@
  * Plugin Name:  Group6 Client Dashboard
  * Plugin URI:   https://github.com/Group6-Inc/g6-client-dashboard
  * Description:  Replaces the default WordPress dashboard with a branded Group6 client portal — SEO metrics, reviews, service CTAs, and how-to guides.
- * Version:      0.5.4.1
+ * Version:      0.5.4.2
  * Author:       Group6
  * Author URI:   https://group6inc.com
  * License:      Proprietary
@@ -25,7 +25,7 @@ if ( defined( 'G6_DASHBOARD_VERSION' ) ) {
 	return;
 }
 
-define( 'G6_DASHBOARD_VERSION',   '0.5.4.1' );
+define( 'G6_DASHBOARD_VERSION',   '0.5.4.2' );
 define( 'G6_DASHBOARD_FILE',      __FILE__ );
 define( 'G6_DASHBOARD_DIR',       plugin_dir_path( __FILE__ ) );
 define( 'G6_DASHBOARD_SLUG',      'g6-client-dashboard' );
@@ -39,13 +39,6 @@ define( 'G6_DASHBOARD_GITHUB_ORG',   'Group6-Inc' );
 define( 'G6_DASHBOARD_GITHUB_REPO',  'g6-client-dashboard' );
 define( 'G6_DASHBOARD_MANIFEST_URL',      'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard.json' );
 define( 'G6_DASHBOARD_MANIFEST_URL_BETA', 'https://gist.githubusercontent.com/g6-gabriel/8d8b3d50ba384da12359e34c57efe39a/raw/g6-client-dashboard-beta.json' );
-
-/**
- * Support ticket destination.
- * Swap this constant (or replace the handler in includes/ajax.php)
- * to switch away from Zendesk to another tool or plain email.
- */
-define( 'G6_ZENDESK_SUBDOMAIN', 'group61347' );
 
 // ── Duplicate-install detection ─────────────────────────────────────────
 // Catches the case that caused the fatal-error/constant-redefinition bug:
@@ -72,7 +65,6 @@ require_once G6_DASHBOARD_DIR . 'includes/class-updater.php';
 require_once G6_DASHBOARD_DIR . 'includes/config.php';
 require_once G6_DASHBOARD_DIR . 'includes/icons.php';
 require_once G6_DASHBOARD_DIR . 'includes/gmb.php';
-require_once G6_DASHBOARD_DIR . 'includes/airtable.php';
 require_once G6_DASHBOARD_DIR . 'includes/g6-api.php';
 require_once G6_DASHBOARD_DIR . 'includes/dashboard.php';
 require_once G6_DASHBOARD_DIR . 'includes/ajax.php';
@@ -86,6 +78,10 @@ $GLOBALS['g6_dashboard_updater'] = new G6\Dashboard\Updater( G6_DASHBOARD_VERSIO
 // nothing cached by the previous version survives one. See
 // g6_api_flush_on_upgrade().
 add_action( 'plugins_loaded', 'g6_api_flush_on_upgrade' );
+
+// Text saved before 1.0 has backslashes in front of its quotes. See
+// g6_config_repair_slashes().
+add_action( 'plugins_loaded', 'g6_config_repair_slashes' );
 
 // Conditionally boot the Asset Manager based on settings.
 add_action( 'plugins_loaded', function() {

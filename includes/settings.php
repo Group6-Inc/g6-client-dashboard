@@ -69,12 +69,12 @@ function g6_settings_icon_options(): array {
 // ── Save handler ──────────────────────────────────────────────────────────────
 
 function g6_settings_handle_save( array &$config ): void {
-	$is_save              = isset( $_POST['g6_save_settings'] );
-	$is_refresh           = isset( $_POST['g6_gmb_refresh'] );
-	$is_airtable_refresh  = isset( $_POST['g6_airtable_refresh'] );
-	$is_clear_zendesk_log = isset( $_POST['g6_clear_zendesk_log'] );
+	$is_save           = isset( $_POST['g6_save_settings'] );
+	$is_refresh        = isset( $_POST['g6_gmb_refresh'] );
+	$is_hours_refresh  = isset( $_POST['g6_hours_refresh'] );
+	$is_clear_log      = isset( $_POST['g6_clear_contact_log'] );
 
-	if ( ( ! $is_save && ! $is_refresh && ! $is_airtable_refresh && ! $is_clear_zendesk_log ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
+	if ( ( ! $is_save && ! $is_refresh && ! $is_hours_refresh && ! $is_clear_log ) || ! check_admin_referer( 'g6_settings_nonce' ) ) {
 		return;
 	}
 
@@ -84,41 +84,39 @@ function g6_settings_handle_save( array &$config ): void {
 		return;
 	}
 
-	if ( $is_airtable_refresh ) {
-		if ( 'portal' === g6_support_hours_source( $config ) ) {
-			g6_api_clear_cache( $config['portal_token'] ?? '' );
-		} else {
-			g6_airtable_clear_cache( $config['support_hours_record_id'] ?? '' );
-		}
+	if ( $is_hours_refresh ) {
+		g6_api_clear_cache( $config['portal_token'] ?? '' );
 		return;
 	}
 
-	if ( $is_clear_zendesk_log ) {
+	if ( $is_clear_log ) {
 		delete_option( 'g6_zendesk_failure_log' );
 		return;
 	}
 
-	// ── Dashboard tab ────────────────────────────────────────────────────────
-	$config['agency_rep_name']  = sanitize_text_field( $_POST['rep_name']   ?? '' );
-	$config['agency_rep_email'] = sanitize_email( $_POST['rep_email']       ?? '' );
-	$config['agency_rep_phone'] = sanitize_text_field( $_POST['rep_phone']  ?? '' );
-	$config['agency_rep_photo'] = esc_url_raw( $_POST['rep_photo']          ?? '' );
+	// WordPress adds slashes to every request value, so without this a
+	// guide described as We're "good" is saved as We\'re \"good\" — and
+	// gains another layer every time the form is saved again.
+	$post = wp_unslash( $_POST );
 
-	// Support Hours — one widget, either source.
-	$old_record_id   = $config['support_hours_record_id'] ?? '';
-	$new_record_id   = g6_airtable_parse_record_id( $_POST['support_hours_record_id'] ?? '' );
+	// ── Dashboard tab ────────────────────────────────────────────────────────
+	$config['agency_rep_name']  = sanitize_text_field( $post['rep_name']   ?? '' );
+	$config['agency_rep_email'] = sanitize_email( $post['rep_email']       ?? '' );
+	$config['agency_rep_phone'] = sanitize_text_field( $post['rep_phone']  ?? '' );
+	$config['agency_rep_photo'] = esc_url_raw( $post['rep_photo']          ?? '' );
+
+	// Support Hours — read from the portal with the site token below.
 	$old_token       = $config['portal_token'] ?? '';
 	$old_portal_url  = $config['portal_url'] ?? '';
-	$new_source      = ( ( $_POST['support_hours_source'] ?? 'airtable' ) === 'portal' ) ? 'portal' : 'airtable';
 
-	$config['support_hours_enabled']   = isset( $_POST['support_hours_enabled'] );
-	$config['support_hours_source']    = $new_source;
-	$config['support_hours_api_key']   = sanitize_text_field( $_POST['support_hours_api_key'] ?? '' );
-	$config['support_hours_record_id'] = $new_record_id;
+	$config['support_hours_enabled'] = isset( $post['support_hours_enabled'] );
+
+	// What the Airtable integration left behind. Nothing reads it any more.
+	unset( $config['support_hours_source'], $config['support_hours_api_key'], $config['support_hours_record_id'] );
 
 	// Against g6_ticket_destinations(), so a destination that is retired
 	// there cannot be saved here by a stale form still holding its value.
-	$_posted_dest = (string) ( $_POST['tickets_destination'] ?? '' );
+	$_posted_dest = (string) ( $post['tickets_destination'] ?? '' );
 
 	$config['tickets_destination'] = isset( g6_ticket_destinations()[ $_posted_dest ] )
 		? $_posted_dest
@@ -131,16 +129,12 @@ function g6_settings_handle_save( array &$config ): void {
 	$config['portal_token'] = preg_replace(
 		'/\s+/',
 		'',
-		sanitize_text_field( $_POST['portal_token'] ?? '' )
+		sanitize_text_field( $post['portal_token'] ?? '' )
 	);
 
 	// Blank means the production portal; anything else is a deliberate
 	// override for a staging or local install.
-	$config['portal_url'] = esc_url_raw( trim( $_POST['portal_url'] ?? '' ) );
-
-	if ( $old_record_id && $old_record_id !== $new_record_id ) {
-		g6_airtable_clear_cache( $old_record_id );
-	}
+	$config['portal_url'] = esc_url_raw( trim( $post['portal_url'] ?? '' ) );
 
 	// Cached responses are keyed by token AND base URL, so changing
 	// either strands the old entry rather than replacing it. Drop it
@@ -153,13 +147,13 @@ function g6_settings_handle_save( array &$config ): void {
 	}
 
 	$config['widgets'] = [
-		'guides'   => isset( $_POST['widget_guides'] ),
-		'keywords' => isset( $_POST['widget_keywords'] ),
-		'reviews'  => isset( $_POST['widget_reviews'] ),
-		'services' => isset( $_POST['widget_services'] ),
-		'contact'  => isset( $_POST['widget_contact'] ),
-		'projects' => isset( $_POST['widget_projects'] ),
-		'video'    => isset( $_POST['widget_video'] ),
+		'guides'   => isset( $post['widget_guides'] ),
+		'keywords' => isset( $post['widget_keywords'] ),
+		'reviews'  => isset( $post['widget_reviews'] ),
+		'services' => isset( $post['widget_services'] ),
+		'contact'  => isset( $post['widget_contact'] ),
+		'projects' => isset( $post['widget_projects'] ),
+		'video'    => isset( $post['widget_video'] ),
 	];
 
 	// Order comes back as a comma-separated list of keys from the drag
@@ -168,7 +162,7 @@ function g6_settings_handle_save( array &$config ): void {
 	// list has never heard of is appended rather than lost.
 	$config['widget_order'] = array_values( array_filter( array_map(
 		'sanitize_key',
-		explode( ',', (string) ( $_POST['widget_order'] ?? '' ) )
+		explode( ',', (string) ( $post['widget_order'] ?? '' ) )
 	) ) );
 
 	// ── GMB integration ─────────────────────────────────────────────────────
@@ -176,9 +170,9 @@ function g6_settings_handle_save( array &$config ): void {
 	$old_competitors  = $config['reviews_competitors'] ?? [];
 
 	// Helper: parse a place_id[]/label[] pair from POST into a locations array.
-	$parse_gmb_rows = function( string $pid_key, string $label_key ): array {
-		$pids   = $_POST[ $pid_key ]   ?? [];
-		$labels = $_POST[ $label_key ] ?? [];
+	$parse_gmb_rows = function( string $pid_key, string $label_key ) use ( $post ): array {
+		$pids   = $post[ $pid_key ]   ?? [];
+		$labels = $post[ $label_key ] ?? [];
 		$out    = [];
 		foreach ( $pids as $i => $pid ) {
 			$pid = sanitize_text_field( $pid );
@@ -194,10 +188,10 @@ function g6_settings_handle_save( array &$config ): void {
 
 	$config['reviews_locations']    = $new_locations;
 	$config['reviews_competitors']  = $new_competitors;
-	$config['reviews_display_mode'] = in_array( $_POST['reviews_display_mode'] ?? '', [ 'combined', 'separate' ], true )
-		? $_POST['reviews_display_mode'] : 'combined';
-	$config['reviews_cta_text']     = sanitize_text_field( $_POST['reviews_cta_text'] ?? '' );
-	$config['reviews_api_key']      = sanitize_text_field( $_POST['reviews_api_key']  ?? '' );
+	$config['reviews_display_mode'] = in_array( $post['reviews_display_mode'] ?? '', [ 'combined', 'separate' ], true )
+		? $post['reviews_display_mode'] : 'combined';
+	$config['reviews_cta_text']     = sanitize_text_field( $post['reviews_cta_text'] ?? '' );
+	$config['reviews_api_key']      = sanitize_text_field( $post['reviews_api_key']  ?? '' );
 
 	// Clear cache for any place IDs that were removed.
 	$new_loc_ids  = array_column( $new_locations,   'place_id' );
@@ -210,14 +204,14 @@ function g6_settings_handle_save( array &$config ): void {
 	}
 
 	// ── Content tab ──────────────────────────────────────────────────────────
-	$config['video_url']   = esc_url_raw( $_POST['video_url']    ?? '' );
-	$config['video_title'] = sanitize_text_field( $_POST['video_title'] ?? '' );
+	$config['video_url']   = esc_url_raw( $post['video_url']    ?? '' );
+	$config['video_title'] = sanitize_text_field( $post['video_title'] ?? '' );
 
 	$allowed_icons  = array_keys( g6_settings_icon_options() );
-	$guide_titles   = $_POST['guide_title'] ?? [];
-	$guide_descs    = $_POST['guide_desc']  ?? [];
-	$guide_urls     = $_POST['guide_url']   ?? [];
-	$guide_icons    = $_POST['guide_icon']  ?? [];
+	$guide_titles   = $post['guide_title'] ?? [];
+	$guide_descs    = $post['guide_desc']  ?? [];
+	$guide_urls     = $post['guide_url']   ?? [];
+	$guide_icons    = $post['guide_icon']  ?? [];
 	$guides = [];
 	foreach ( $guide_titles as $i => $title ) {
 		$title = sanitize_text_field( $title );
@@ -236,12 +230,12 @@ function g6_settings_handle_save( array &$config ): void {
 		$config['guides'] = $guides;
 	}
 
-	$svc_names      = $_POST['svc_name']      ?? [];
-	$svc_descs      = $_POST['svc_desc']      ?? [];
-	$svc_urls       = $_POST['svc_url']       ?? [];
-	$svc_icons      = $_POST['svc_icon']      ?? [];
-	$svc_cta_labels = $_POST['svc_cta_label'] ?? [];
-	$svc_highlights = $_POST['svc_highlight'] ?? [];
+	$svc_names      = $post['svc_name']      ?? [];
+	$svc_descs      = $post['svc_desc']      ?? [];
+	$svc_urls       = $post['svc_url']       ?? [];
+	$svc_icons      = $post['svc_icon']      ?? [];
+	$svc_cta_labels = $post['svc_cta_label'] ?? [];
+	$svc_highlights = $post['svc_highlight'] ?? [];
 	$services       = [];
 	foreach ( $svc_names as $i => $name ) {
 		$name = sanitize_text_field( $name );
@@ -262,7 +256,7 @@ function g6_settings_handle_save( array &$config ): void {
 		$config['services'] = $services;
 	}
 
-	$keywords_raw = trim( $_POST['keywords'] ?? '' );
+	$keywords_raw = trim( $post['keywords'] ?? '' );
 	if ( $keywords_raw ) {
 		$keywords = [];
 		foreach ( explode( "\n", $keywords_raw ) as $line ) {
@@ -283,34 +277,34 @@ function g6_settings_handle_save( array &$config ): void {
 
 	// ── Tracking tab ─────────────────────────────────────────────────────────
 	$config['tracking'] = [
-		'gtm_id'            => sanitize_text_field( $_POST['gtm_id']            ?? '' ),
-		'ga_measurement_id' => sanitize_text_field( $_POST['ga_measurement_id'] ?? '' ),
-		'google_ads_id'     => sanitize_text_field( $_POST['google_ads_id']     ?? '' ),
-		'facebook_pixel_id' => sanitize_text_field( $_POST['facebook_pixel_id'] ?? '' ),
-		'x_pixel_id'        => sanitize_text_field( $_POST['x_pixel_id']        ?? '' ),
-		'clarity_project_id'=> sanitize_text_field( $_POST['clarity_project_id'] ?? '' ),
+		'gtm_id'            => sanitize_text_field( $post['gtm_id']            ?? '' ),
+		'ga_measurement_id' => sanitize_text_field( $post['ga_measurement_id'] ?? '' ),
+		'google_ads_id'     => sanitize_text_field( $post['google_ads_id']     ?? '' ),
+		'facebook_pixel_id' => sanitize_text_field( $post['facebook_pixel_id'] ?? '' ),
+		'x_pixel_id'        => sanitize_text_field( $post['x_pixel_id']        ?? '' ),
+		'clarity_project_id'=> sanitize_text_field( $post['clarity_project_id'] ?? '' ),
 	];
 
 	// ── Login tab ─────────────────────────────────────────────────────────────
 	$_ld = g6_default_config()['login'];
 	$config['login'] = [
-		'enabled'        => isset( $_POST['login_enabled'] ),
-		'layout'         => sanitize_text_field( $_POST['login_layout']        ?? $_ld['layout'] ),
-		'logo_url'       => esc_url_raw( $_POST['login_logo_url']              ?? '' ),
-		'logo_height'    => absint( $_POST['login_logo_height']                ?? $_ld['logo_height'] ),
-		'bg_color'       => sanitize_text_field( $_POST['login_bg_color']      ?? '' ) ?: $_ld['bg_color'],
-		'hero_image_url' => esc_url_raw( $_POST['login_hero_image_url']        ?? '' ),
-		'accent_color'        => sanitize_text_field( $_POST['login_accent_color']      ?? '' ) ?: $_ld['accent_color'],
-		'link_color'          => sanitize_text_field( $_POST['login_link_color']        ?? '' ) ?: $_ld['link_color'],
-		'login_error_message' => sanitize_text_field( $_POST['login_error_message']     ?? '' ),
+		'enabled'        => isset( $post['login_enabled'] ),
+		'layout'         => sanitize_text_field( $post['login_layout']        ?? $_ld['layout'] ),
+		'logo_url'       => esc_url_raw( $post['login_logo_url']              ?? '' ),
+		'logo_height'    => absint( $post['login_logo_height']                ?? $_ld['logo_height'] ),
+		'bg_color'       => sanitize_text_field( $post['login_bg_color']      ?? '' ) ?: $_ld['bg_color'],
+		'hero_image_url' => esc_url_raw( $post['login_hero_image_url']        ?? '' ),
+		'accent_color'        => sanitize_text_field( $post['login_accent_color']      ?? '' ) ?: $_ld['accent_color'],
+		'link_color'          => sanitize_text_field( $post['login_link_color']        ?? '' ) ?: $_ld['link_color'],
+		'login_error_message' => sanitize_text_field( $post['login_error_message']     ?? '' ),
 	];
 
 	// ── Developer Tools tab ───────────────────────────────────────────────────
-	$config['asset_manager_enabled']    = isset( $_POST['asset_manager_enabled'] );
-	$config['disable_attachment_slugs'] = isset( $_POST['disable_attachment_slugs'] );
+	$config['asset_manager_enabled']    = isset( $post['asset_manager_enabled'] );
+	$config['disable_attachment_slugs'] = isset( $post['disable_attachment_slugs'] );
 
 	// ── Plugin tab ────────────────────────────────────────────────────────────
-	$config['beta_updates_enabled'] = isset( $_POST['beta_updates_enabled'] );
+	$config['beta_updates_enabled'] = isset( $post['beta_updates_enabled'] );
 
 	$config['last_updated'] = current_time( 'mysql' );
 
@@ -354,12 +348,6 @@ function g6_settings_page_render(): void {
 
 		<?php if ( isset( $_POST['g6_save_settings'] ) ) : ?>
 			<div class="notice notice-success is-dismissible"><p>Settings saved.</p></div>
-			<?php
-			$_sh_raw_input = trim( $_POST['support_hours_record_id'] ?? '' );
-			if ( $_sh_raw_input && empty( $cfg['support_hours_record_id'] ) ) :
-			?>
-			<div class="notice notice-warning is-dismissible"><p>Couldn't find a valid Airtable record ID in what you pasted for Support Hours — paste a record URL (it should contain <code>rec…</code>) or the bare record ID directly.</p></div>
-			<?php endif; ?>
 		<?php endif; ?>
 
 		<nav class="nav-tab-wrapper" id="g6-tab-nav">
@@ -422,7 +410,7 @@ function g6_settings_page_render(): void {
 					$_p_url        = $cfg['portal_url'] ?? '';
 					$_p_url_locked = defined( 'G6_API_BASE' ) && G6_API_BASE;
 					$_p_in_use     = array_keys( array_filter( [
-						'Support Hours'  => ( 'portal' === g6_support_hours_source( $cfg ) ),
+						'Support Hours'  => ! empty( $cfg['support_hours_enabled'] ),
 						'Get in Touch'   => ( 'portal' === g6_tickets_destination( $cfg ) ),
 					] ) );
 					?>
@@ -482,34 +470,17 @@ function g6_settings_page_render(): void {
 							<?php elseif ( $_p_in_use ) : ?>
 								In use by: <strong><?php echo esc_html( implode( ', ', $_p_in_use ) ); ?></strong>.
 							<?php else : ?>
-								Token saved, but nothing is set to use it yet — pick <em>Group6 Client Portal</em>
-								under Support Hours, or under Get in Touch on the Widgets tab.
+								Token saved, but nothing is set to use it yet — turn on Support Hours below,
+								or pick <em>Group6 Client Portal</em> under Get in Touch on the Widgets tab.
 							<?php endif; ?>
 						</p>
 					</div>
 
 					<!-- Support Hours -->
 					<?php
-					$_sh_record_id     = $cfg['support_hours_record_id'] ?? '';
-					$_sh_api_key       = $cfg['support_hours_api_key']   ?? '';
-					$_sh_source        = g6_support_hours_source( $cfg );
-					$_sh_is_portal     = ( 'portal' === $_sh_source );
-					$_sh_portal_token  = g6_portal_token( $cfg );
-
-					// Both branches answer the same three questions, so the
-					// status line below reads the same either way.
-					if ( $_sh_is_portal ) {
-						$_sh_has_config = (bool) $_sh_portal_token;
-						$_sh_error      = $_sh_portal_token ? g6_api_get_last_error( 'support-hours', $_sh_portal_token ) : '';
-						$_sh_cached     = $_sh_portal_token ? get_transient( g6_api_transient_key( 'support-hours', $_sh_portal_token ) ) : false;
-						$_sh_refresh_in = '30 min';
-					} else {
-						$_sh_has_config = $_sh_record_id && $_sh_api_key;
-						$_sh_error      = $_sh_record_id ? g6_airtable_get_last_error( $_sh_record_id ) : '';
-						$_sh_cached     = $_sh_record_id ? get_transient( g6_airtable_transient_key( $_sh_record_id ) ) : false;
-						$_sh_refresh_in = '6 h';
-					}
-
+					$_sh_portal_token = g6_portal_token( $cfg );
+					$_sh_error        = $_sh_portal_token ? g6_api_get_last_error( 'support-hours', $_sh_portal_token ) : '';
+					$_sh_cached       = $_sh_portal_token ? get_transient( g6_api_transient_key( 'support-hours', $_sh_portal_token ) ) : false;
 					$_sh_last_fetched = ( is_array( $_sh_cached ) && isset( $_sh_cached['fetched_at'] ) ) ? $_sh_cached['fetched_at'] : '';
 					?>
 					<div class="g6s-card g6s-card--full<?php echo empty( $cfg['support_hours_enabled'] ) ? ' g6w-card--disabled' : ''; ?>" id="g6-support-hours-card">
@@ -524,59 +495,25 @@ function g6_settings_page_render(): void {
 							</label>
 						</div>
 						<div id="g6-support-hours-fields" class="g6w-card__settings"<?php echo empty( $cfg['support_hours_enabled'] ) ? ' style="display:none"' : ''; ?>>
-							<div class="g6s-field" style="max-width:320px;">
-								<label class="g6s-field__label" for="support_hours_source">Read the balance from</label>
-								<select class="g6s-field__input" id="support_hours_source" name="support_hours_source">
-									<option value="airtable" <?php selected( ! $_sh_is_portal ); ?>>Airtable</option>
-									<option value="portal" <?php selected( $_sh_is_portal ); ?>>Group6 Client Portal</option>
-								</select>
-							</div>
+							<p class="description" style="margin-top:2px;">
+								<?php if ( $_sh_portal_token ) : ?>
+									Read from the Group6 portal using this site's token, set under
+									<strong>Group6 Portal</strong> above.
+								<?php else : ?>
+									<span style="color:#d63638;"><strong>No portal token yet.</strong> Add one under
+									<strong>Group6 Portal</strong> above, or the balance will not show.</span>
+								<?php endif; ?>
+							</p>
 
-							<!-- Airtable -->
-							<div class="g6-sh-source" data-source="airtable"<?php echo $_sh_is_portal ? ' style="display:none"' : ''; ?>>
-								<div class="g6s-field-row">
-									<div class="g6s-field">
-										<label class="g6s-field__label" for="support_hours_api_key">Airtable Personal Access Token</label>
-										<input class="g6s-field__input" type="password" id="support_hours_api_key" name="support_hours_api_key"
-											value="<?php echo esc_attr( $_sh_api_key ); ?>" placeholder="pat…" autocomplete="off">
-									</div>
-									<div class="g6s-field">
-										<label class="g6s-field__label" for="support_hours_record_id">Airtable Record URL or ID</label>
-										<input class="g6s-field__input" type="text" id="support_hours_record_id" name="support_hours_record_id"
-											value="<?php echo esc_attr( $_sh_record_id ); ?>" placeholder="Paste the record URL, or recXXXXXXXXXXXXXX">
-									</div>
-								</div>
-								<p class="description" style="margin-top:6px;">
-									Create a token at <a href="https://airtable.com/create/tokens" target="_blank">airtable.com/create/tokens</a> with <code>data.records:read</code> scope, granted access to the Client Support Hours base. The same token works across every client site — only the record (which row = this client) changes per site.
-								</p>
-								<p class="description" style="margin-top:6px;">
-									<strong>To get the record URL:</strong> open the client's row in Airtable, click any cell in that row, then press <kbd>Space</kbd> to expand it. Once expanded, copy the URL from your browser's address bar — it will end in <code>recXXXXXXXXXXXXXX</code>. Paste the whole thing here; everything except the record ID is ignored automatically.
-								</p>
-							</div>
-
-							<!-- Group6 Client Portal -->
-							<div class="g6-sh-source" data-source="portal"<?php echo $_sh_is_portal ? '' : ' style="display:none"'; ?>>
-								<p class="description" style="margin-top:2px;">
-									<?php if ( $_sh_portal_token ) : ?>
-										Read from the Group6 portal using this site's token, set under
-										<strong>Group6 Portal</strong> above.
-									<?php else : ?>
-										<strong>No portal token yet.</strong> Add one under
-										<strong>Group6 Portal</strong> above — the same token serves every
-										portal feature, so it is only entered once.
-									<?php endif; ?>
-								</p>
-							</div>
-
-							<?php if ( $_sh_has_config ) : ?>
+							<?php if ( $_sh_portal_token ) : ?>
 							<div style="display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap;">
-								<button type="submit" name="g6_airtable_refresh" value="1" class="button">
+								<button type="submit" name="g6_hours_refresh" value="1" class="button">
 									<?php echo g6_icon( 'refresh-cw', 13 ); ?> Refresh Data
 								</button>
 								<?php if ( $_sh_error ) : ?>
 									<span style="color:#d63638; font-size:13px;">API error: <?php echo esc_html( $_sh_error ); ?></span>
 								<?php elseif ( $_sh_last_fetched ) : ?>
-									<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every <?php echo esc_html( $_sh_refresh_in ); ?></span>
+									<span class="description">Last fetched: <?php echo esc_html( $_sh_last_fetched ); ?> · refreshes every 30 min</span>
 								<?php else : ?>
 									<span class="description">Not yet fetched — save to pull data.</span>
 								<?php endif; ?>
@@ -904,8 +841,7 @@ function g6_settings_page_render(): void {
 									<br><br>
 									Every word of it comes from the <strong>Group6 Client Portal</strong>,
 									fetched with this site&rsquo;s token under <strong>Group6 Portal</strong>
-									on the Dashboard tab. There is no Airtable equivalent and nothing to
-									fill in here: change a project in the portal and this follows within
+									on the Dashboard tab. There is nothing to fill in here: change a project in the portal and this follows within
 									half an hour. Remove the token and the widget goes quiet.
 									<br><br>
 									Nothing appears if there are no live projects, so it is safe to leave on.
@@ -931,7 +867,7 @@ function g6_settings_page_render(): void {
 								<div class="g6w-card__icon"><?php echo g6_icon( 'message-circle', 20 ); ?></div>
 								<div>
 									<h3 class="g6w-card__title">Get in Touch</h3>
-									<p class="g6w-card__desc">Support request form. Files each request into Zendesk, the Group6 Client Portal, or plain email.</p>
+									<p class="g6w-card__desc">Support request form. Files each request into the Group6 Client Portal, or plain email.</p>
 								</div>
 							</div>
 						</div>
@@ -956,20 +892,12 @@ function g6_settings_page_render(): void {
 									this site's client, using the token under <strong>Group6 Portal</strong> on
 									the Dashboard tab. The client sees the thread and every reply in their
 									portal.
-								<?php elseif ( 'email' === $_tk_dest ) : ?>
+								<?php else : ?>
 									Requests are emailed to
 									<strong><?php echo esc_html( $cfg['agency_rep_email'] ?? 'the account manager' ); ?></strong>
 									and no ticket is opened anywhere. Replying to that email replies to the
 									person who sent it. For a client we support without a ticket queue &mdash;
-									and it is where the other two land anyway if they cannot be reached.
-									<br><br>
-									The form is a subject line and a message: no topic dropdown, since that
-									list is Zendesk&rsquo;s own issue-type field and a site set to email is
-									not filing anything into Zendesk.
-								<?php else : ?>
-									Requests go to Zendesk, as they always have. Switch this per site — a
-									site can read Support Hours from the portal while its form still
-									files into Zendesk.
+									and it is where portal requests land anyway if the portal cannot be reached.
 								<?php endif; ?>
 							</p>
 						</div>
@@ -1352,12 +1280,12 @@ function g6_settings_page_render(): void {
 				<h2 class="title" style="margin-top:28px;">Contact Form Failure Log</h2>
 				<p class="description">Recent failures from the dashboard's contact form, whichever destination it was set to — a message that hit one of these still went out via the email fallback.</p>
 				<?php
-				$_zendesk_log = get_option( 'g6_zendesk_failure_log', [] );
-				if ( ! is_array( $_zendesk_log ) ) {
-					$_zendesk_log = [];
+				$_contact_log = get_option( 'g6_zendesk_failure_log', [] );
+				if ( ! is_array( $_contact_log ) ) {
+					$_contact_log = [];
 				}
 				?>
-				<?php if ( empty( $_zendesk_log ) ) : ?>
+				<?php if ( empty( $_contact_log ) ) : ?>
 					<p class="description" style="margin-top:8px;">No failures logged.</p>
 				<?php else : ?>
 					<div class="g6-changelog-box">
@@ -1372,7 +1300,7 @@ function g6_settings_page_render(): void {
 								</tr>
 							</thead>
 							<tbody>
-								<?php foreach ( $_zendesk_log as $_entry ) : ?>
+								<?php foreach ( $_contact_log as $_entry ) : ?>
 								<tr>
 									<td style="white-space:nowrap;"><?php echo esc_html( $_entry['time'] ?? '' ); ?></td>
 									<td><?php echo esc_html( $_entry['client'] ?? '' ); ?></td>
@@ -1385,7 +1313,7 @@ function g6_settings_page_render(): void {
 						</table>
 					</div>
 					<p style="margin-top:10px;">
-						<button type="submit" name="g6_clear_zendesk_log" value="1" class="button button-secondary">Clear Log</button>
+						<button type="submit" name="g6_clear_contact_log" value="1" class="button button-secondary">Clear Log</button>
 					</p>
 				<?php endif; ?>
 
@@ -1690,7 +1618,7 @@ function g6_settings_page_render(): void {
 			});
 
 			// This form has multiple submit buttons (Save Settings, plus "Refresh Data"
-			// buttons for GMB/Airtable that appear earlier in the DOM). Pressing Enter
+			// buttons for GMB/Support Hours that appear earlier in the DOM). Pressing Enter
 			// inside a text field implicitly submits via the FIRST submit button in the
 			// form, not necessarily "Save Settings" — so block Enter-to-submit on plain
 			// text inputs and require an explicit click on the intended button instead.
@@ -1930,22 +1858,6 @@ function g6_settings_page_render(): void {
 				if (shFields) shFields.style.display = this.checked ? '' : 'none';
 				if (shCard)   shCard.classList.toggle('g6w-card--disabled', !this.checked);
 			});
-		}
-
-		// Support Hours source → which set of credentials is on show.
-		// Both panels stay in the DOM and keep their values, so switching
-		// back and forth does not make you re-paste anything; only one is
-		// ever read, because the saved source decides which is used.
-		var shSource = document.getElementById('support_hours_source');
-		if (shSource) {
-			var apply = function() {
-				var chosen = shSource.value;
-				document.querySelectorAll('.g6-sh-source').forEach(function(panel) {
-					panel.style.display = (panel.dataset.source === chosen) ? '' : 'none';
-				});
-			};
-			shSource.addEventListener('change', apply);
-			apply();
 		}
 	});
 

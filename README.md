@@ -164,7 +164,7 @@ g6-client-dashboard/
 │   ├── config.php                ← Default config values & option retrieval
 │   ├── icons.php                 ← SVG icon helpers
 │   ├── dashboard.php             ← Client-facing dashboard: widgets, sidebar, CSS, render
-│   ├── ajax.php                  ← Contact form AJAX handler (Zendesk)
+│   ├── ajax.php                  ← Contact form AJAX handler (portal or email)
 │   ├── settings.php              ← Admin settings page (Group6 users only)
 │   ├── tracking.php              ← Tracking script injection (GTM, Ads, Meta, X, Clarity)
 │   └── asset-manager.php         ← G6 Asset Manager (loaded conditionally)

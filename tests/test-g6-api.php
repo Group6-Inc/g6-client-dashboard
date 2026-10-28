@@ -10,8 +10,8 @@
  * without installing something is a suite nobody runs.
  *
  * What it is actually protecting:
- *   - a site with no source saved keeps reading Airtable. Get this wrong
- *     and every existing client site goes blank on update.
+ *   - a site still saved as Zendesk, or with nothing saved, files into
+ *     the portal rather than into a destination that no longer exists.
  *   - the cache key includes the portal URL, so pointing a site at
  *     staging and back cannot serve the other one's balance.
  *   - failures are cached briefly, so a portal that is down is not hit
@@ -75,11 +75,11 @@ function is(string $what, $got, $want) {
     printf("FAIL %s\n  got  %s\n  want %s\n", $what, var_export($got, true), var_export($want, true));
 }
 
-// ── 1. An older site with no source saved must keep reading Airtable ──
-is('no setting saved => airtable', g6_support_hours_source([]), 'airtable');
-is('empty string => airtable', g6_support_hours_source(['support_hours_source' => '']), 'airtable');
-is('garbage => airtable', g6_support_hours_source(['support_hours_source' => 'nonsense']), 'airtable');
-is('portal => portal', g6_support_hours_source(['support_hours_source' => 'portal']), 'portal');
+// ── 1. Airtable is gone, not just hidden ─────────────────────────────
+is('no source switch any more', function_exists('g6_support_hours_source'), false);
+is('no Airtable file to load', file_exists(__DIR__ . '/../includes/airtable.php'), false);
+is('nothing requires it',
+   str_contains(file_get_contents(__DIR__ . '/../g6-client-dashboard.php'), 'airtable.php'), false);
 
 // ── 2. Base URL precedence, and trailing slashes ──
 is('blank setting => production', g6_api_base([]), 'https://portal.group6inc.com/api/v1');
@@ -99,7 +99,7 @@ $GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode([
     'active' => true, 'balance_hours' => 12.5, 'total_hours' => 40.0, 'fetched_at' => '2026-09-04 11:00:00',
 ])];
 $got = g6_api_get_support_hours('tok');
-is('shape matches the Airtable contract', array_keys($got), ['active', 'balance_hours', 'total_hours', 'fetched_at']);
+is('shape matches what the meter reads', array_keys($got), ['active', 'balance_hours', 'total_hours', 'fetched_at']);
 is('balance passed through', $got['balance_hours'], 12.5);
 is('bearer token sent', $GLOBALS['http']['calls'][0]['args']['headers']['Authorization'], 'Bearer tok');
 is('hits the configured host', $GLOBALS['http']['calls'][0]['url'], 'https://a.test/api/v1/support-hours');
@@ -131,9 +131,13 @@ $GLOBALS['t'][g6_api_transient_key('support-hours', 'tok', $old)] = ['balance_ho
 g6_api_clear_cache('tok', $old);
 is('old entry is gone', get_transient(g6_api_transient_key('support-hours', 'tok', $old)), false);
 
-// ── 7. Destination defaults, same upgrade-safety rule as the source ──
-is('no destination saved => zendesk', g6_tickets_destination([]), 'zendesk');
-is('garbage => zendesk', g6_tickets_destination(['tickets_destination' => 'nonsense']), 'zendesk');
+// ── 7. Destination defaults ──────────────────────────────────────────
+// Zendesk is retired. A site still saved as it moves to the portal on its
+// next page load, with nothing to migrate.
+is('zendesk is no longer offered', isset(g6_ticket_destinations()['zendesk']), false);
+is('a site saved as zendesk => portal', g6_tickets_destination(['tickets_destination' => 'zendesk']), 'portal');
+is('no destination saved => portal', g6_tickets_destination([]), 'portal');
+is('garbage => portal', g6_tickets_destination(['tickets_destination' => 'nonsense']), 'portal');
 is('portal => portal', g6_tickets_destination(['tickets_destination' => 'portal']), 'portal');
 is('email => email', g6_tickets_destination(['tickets_destination' => 'email']), 'email');
 
@@ -153,17 +157,19 @@ is('the dropdown is built from the list', str_contains($_set_src, 'g6_ticket_des
 is('the save validates against the list',
    str_contains($_set_src, 'isset( g6_ticket_destinations()[ $_posted_dest ] )'), true);
 
-// The email destination must not fall through Zendesk on its way out.
+// Nothing posts to Zendesk any more, from any path.
 $_ajax_src = file_get_contents(__DIR__ . '/../includes/ajax.php');
-is('email skips the ticket tools', str_contains($_ajax_src, "if ( 'email' === \$destination ) {"), true);
+is('no request goes to zendesk', str_contains($_ajax_src, 'zendesk.com'), false);
+is('its subdomain constant is gone',
+   str_contains(file_get_contents(__DIR__ . '/../g6-client-dashboard.php'), 'G6_ZENDESK_SUBDOMAIN'), false);
 
 // ── 8. The token is one shared connection, not a per-feature setting ──
 is('token read from the shared key', g6_portal_token(['portal_token' => ' abc ']), 'abc');
 is('missing token => empty', g6_portal_token([]), '');
 
 // ── 9. Submitting sends no category ──────────────────────────────────
-// The dropdown mirrors Zendesk's issue-type field in prose; none of its
-// values is a portal category slug, so sending one would be a 422.
+// When the portal's categories could not be fetched there is no topic to
+// send, and inventing one would be a 422.
 function wp_get_current_user() {
     return new class { public function exists() { return true; }
         public $user_email = 'jane@acme.test'; public $display_name = 'Jane'; };
@@ -353,34 +359,17 @@ is('the margin reset excludes our markup',
 is('nothing resets every paragraph margin any more',
    str_contains($_css, '#welcome-panel p  { font-size: inherit !important; line-height: inherit !important; margin: inherit !important; }'), false);
 
-// ── 21. The Zendesk topic list goes wherever Zendesk goes ────────────
-// Those options are the wording of Zendesk's own issue-type field, not a
-// topic list of ours. A site set to email is filing nothing into Zendesk
-// and must not still be answering its question — so the dropdown is
-// behind 'zendesk' === the destination, stated as a negative so that
-// deleting Zendesk from g6_ticket_destinations() retires the markup too.
+// ── 21. The Zendesk topic list went with Zendesk ─────────────────────
+// Those options were the wording of Zendesk's own issue-type field. Every
+// form now has a typed subject; the portal's fetched topics sit beside it.
 $_contact = file_get_contents(__DIR__ . '/../includes/widgets/contact.php');
-is('the typed subject is anything but zendesk',
-   str_contains($_contact, "\$_c_typed = ( 'zendesk' !== \$_c_dest );"), true);
+is('the Zendesk topics are gone', str_contains($_contact, 'I would like to update my website'), false);
+is('the subject is always typed',
+   str_contains($_contact, '<input class="g6-contact-form__select" type="text" id="g6-subject"'), true);
+is('the portal topics survive', str_contains($_contact, 'if ( $_c_topics ) : ?>'), true);
 
-$_if   = strpos($_contact, 'if ( $_c_typed )');
-$_else = strpos($_contact, '<?php else : ?>', $_if);
-$_opt  = strpos($_contact, 'I would like to update my website');
-is('the dropdown is on the far side of that branch',
-   $_if !== false && $_else !== false && $_opt !== false && $_if < $_else && $_else < $_opt, true);
-
-// The portal's own topic list is separate and survives: it is fetched,
-// and it sits beside a typed subject rather than replacing one.
-is('the portal topics are not behind the same branch',
-   strpos($_contact, '$_c_topics ) : ?>') < $_if, true);
-
-// Wording is read off the field, not the mode name — three destinations
-// render two kinds of subject field between them.
 $_js = file_get_contents(__DIR__ . '/../includes/dashboard.php');
-is('the error follows the field, not the mode',
-   str_contains($_js, "var typedSubject = subjectEl.tagName !== 'SELECT';"), true);
-is('nothing keys the wording off portal mode any more',
-   str_contains($_js, "dataset.mode === 'portal'"), false);
+is('no wording for a subject dropdown', str_contains($_js, 'Please select a subject'), false);
 
 // ── 22. Every call says what this site is running ────────────────────
 // The portal turns these into its Sites screen. They ride on requests
@@ -390,7 +379,6 @@ is('nothing keys the wording off portal mode any more',
 $GLOBALS['t'] = [];
 $GLOBALS['cfg'] = [
     'portal_token'         => 'tok',
-    'support_hours_source' => 'portal',
     'tickets_destination'  => 'email',
 ];
 $GLOBALS['http'] = ['code' => 200, 'calls' => [], 'body' => json_encode(['active' => true])];
@@ -416,12 +404,19 @@ is('a submitted ticket reports too', $_posted['X-G6-Plugin-Version'], G6_DASHBOA
 is('and still authenticates', $_posted['Authorization'], 'Bearer tok');
 
 // An unconfigured site defaults the same way everything else does, so
-// the portal is told "airtable/zendesk" rather than nothing at all.
+// the portal is told what it is actually doing rather than nothing.
 $GLOBALS['cfg'] = [];
 $_default = g6_api_headers('tok');
 is('an unconfigured site reports its real defaults',
    [$_default['X-G6-Hours-Source'], $_default['X-G6-Tickets-Destination']],
-   ['airtable', 'zendesk']);
+   ['portal', 'portal']);
+
+// A site left saved on the old values reports where it really goes.
+$GLOBALS['cfg'] = ['support_hours_source' => 'airtable', 'tickets_destination' => 'zendesk'];
+$_legacy = g6_api_headers('tok');
+is('an old saved config reports the portal',
+   [$_legacy['X-G6-Hours-Source'], $_legacy['X-G6-Tickets-Destination']],
+   ['portal', 'portal']);
 
 if ($GLOBALS['php_diagnostics'] > 0) {
     $fail++;
