@@ -537,7 +537,7 @@ function g6_settings_page_render(): void {
 
 				<?php
 				$widget_nav_items = [
-					'guides'   => [ 'label' => 'How-To Guides & Resources', 'icon' => 'book-open' ],
+					'guides'   => [ 'label' => 'Website Training Resources', 'icon' => 'book-open' ],
 					'services' => [ 'label' => 'Grow Your Business',        'icon' => 'zap' ],
 					'keywords' => [ 'label' => 'Keyword Rankings',          'icon' => 'search' ],
 					'video'    => [ 'label' => 'Featured Video',            'icon' => 'play-circle' ],
@@ -584,7 +584,7 @@ function g6_settings_page_render(): void {
 							<div class="g6w-card__meta">
 								<div class="g6w-card__icon"><?php echo g6_icon( 'book-open', 20 ); ?></div>
 								<div>
-									<h3 class="g6w-card__title">How-To Guides &amp; Resources</h3>
+									<h3 class="g6w-card__title">Website Training Resources</h3>
 									<p class="g6w-card__desc">Guide cards linking to Loom videos, Google Docs, or any URL.</p>
 								</div>
 							</div>

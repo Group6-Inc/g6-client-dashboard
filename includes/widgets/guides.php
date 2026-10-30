@@ -20,9 +20,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 			<div class="g6-dashboard__section-header">
 				<h2 class="g6-dashboard__section-title">
 					<?php echo g6_icon( 'book-open', 20 ); ?>
-					How-To Guides &amp; Resources
+					Website Training Resources
 				</h2>
 			</div>
+			<p style="font-size:14px; color:var(--g6-neutral-500); margin:0 0 18px; line-height:1.5;">
+				Access step-by-step guides and video tutorials to learn how to manage and update your website.
+			</p>
 			<div class="g6-guides">
 				<?php foreach ( $cfg['guides'] as $guide ) : ?>
 					<a href="<?php echo esc_attr( $guide['url'] ); ?>" class="g6-guide" target="_blank" rel="noopener">
