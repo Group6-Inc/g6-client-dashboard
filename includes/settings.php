@@ -1236,7 +1236,7 @@ function g6_settings_page_render(): void {
 								<a href="<?php echo esc_url( wp_nonce_url( add_query_arg( 'g6-refresh-update', '1' ), 'g6_refresh_update' ) ); ?>" class="button button-secondary">
 									Force Refresh Update Cache
 								</a>
-								<span style="margin-left:6px; color:#646970;">Clears the cached manifest and reloads update info immediately.</span>
+								<span style="margin-left:6px; color:#646970;">Clears the cached manifest and takes you to Dashboard &rarr; Updates, where the newest version is offered.</span>
 							</p>
 						</td>
 					</tr>
