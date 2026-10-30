@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 					Website Training Resources
 				</h2>
 			</div>
-			<p style="font-size:14px; color:var(--g6-neutral-500); margin:0 0 18px; line-height:1.5;">
+			<p class="g6-dashboard__section-desc">
 				Access step-by-step guides and video tutorials to learn how to manage and update your website.
 			</p>
 			<div class="g6-guides">

@@ -231,6 +231,11 @@ function g6_get_dashboard_css(): string {
 
 	.g6-dashboard__section-title { font-family: var(--g6-font-heading); font-size: 18px; font-weight: 600; color: var(--g6-neutral-900); margin: 0; display: flex; align-items: center; gap: 8px; }
 	.g6-dashboard__section-title svg { color: var(--g6-primary); }
+	/* The line under a widget title. Pulled up into the header\'s 16px so
+	   it reads as part of the title, with the gap below it instead. Needs
+	   the g6- class: an unclassed paragraph is handed its parent\'s margin
+	   by the welcome-panel reset above, whatever its own style says. */
+	.g6-dashboard__section-desc { font-size: 14px; color: var(--g6-neutral-500); margin: -8px 0 18px; line-height: 1.5; }
 	.g6-dashboard__section-badge { font-size: 11px; font-weight: 600; background: var(--g6-primary-light); color: var(--g6-primary); padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
 	.g6-dashboard__updated { font-size: 12px; color: var(--g6-neutral-500); }
 

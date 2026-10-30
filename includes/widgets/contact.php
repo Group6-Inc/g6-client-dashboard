@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						Get in Touch
 					</h2>
 				</div>
-				<p style="font-size:14px; color:var(--g6-neutral-500); margin:0 0 18px; line-height:1.5;">
+				<p class="g6-dashboard__section-desc">
 					Have a question or need help? Submit a request and your account manager will follow up.
 				</p>
 				<?php
