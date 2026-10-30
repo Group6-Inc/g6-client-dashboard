@@ -186,7 +186,10 @@ class Updater {
 		delete_transient( 'g6_dashboard_beta_manifest' );
 		delete_site_transient( 'update_plugins' );
 
-		wp_safe_redirect( remove_query_arg( [ 'g6-refresh-update', '_wpnonce' ] ) );
+		// Straight to Dashboard → Updates rather than back to the page the
+		// button was on: that is where the new version is offered, and
+		// WordPress re-checks every plugin when that screen loads.
+		wp_safe_redirect( self_admin_url( 'update-core.php' ) );
 		exit;
 	}
 
